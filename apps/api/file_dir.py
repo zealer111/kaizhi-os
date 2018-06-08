@@ -29,7 +29,7 @@ def get_package(self,key):
         except Branch_Package.DoesNotExist:
             return None
 
-def file_path(self, user, return_json=True):
+def get_file_path_as_card(self, user, return_json=True):
     package = Master_Package.objects.filter(~Q(p_type=2),create_user=user)
     data = []
     for packages in package:
@@ -82,7 +82,7 @@ def file_path(self, user, return_json=True):
         return {'errno':0, 'msg': 'success','data':getChildren()}
 
 
-def assi_file_path(self, user, return_json=True):
+def get_assi_file_path_as_card(self, user, return_json=True):
     package = Branch_Package.objects.filter(~Q(p_type=2),create_user=user)
     data = []
     for packages in package:
@@ -134,7 +134,7 @@ def assi_file_path(self, user, return_json=True):
         return {'errno':0, 'msg': 'success','data':getChildren()}
 
 
-def file_paths(self,key,up,return_json=True):
+def get_file_paths_as_package(self,key,up,return_json=True):
     try:
         package = Master_Package.objects.get(id=key)
     except Master_Package.DoesNotExist:
@@ -469,8 +469,8 @@ def verify_content(self,content):
 
 def get_file_dir(self,role,up):        
     if settings.GIT_ROLE_MASTER == role:
-        path = file_path(self,up)
+        path = get_file_path_as_card(self,up)
     elif  settings.GIT_ROLE_BRANCH  == role:
-        path = assi_file_path(self,up)
+        path = get_assi_file_path_as_card(self,up)
     return path
 

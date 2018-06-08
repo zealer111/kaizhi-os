@@ -539,6 +539,3 @@ class Short_Url(models.Model):
         ordering = ['-create_time']
         verbose_name = '视频链接'
         verbose_name_plural = '视频链接信息表'
-
-
-

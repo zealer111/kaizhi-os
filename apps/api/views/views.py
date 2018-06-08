@@ -23,10 +23,21 @@ from libs import log_utils
 from libs import git_utils
 import logging
 
-logging.basicConfig(filename='/tmp/kaizhi.log',level=logging.DEBUG)
+logging.basicConfig(filename='/tmp/kaizhi3.log',level=logging.DEBUG)
 log_utils.default_logging_config()
 logger = log_utils.getLogger(__name__)
 
+
+
+##########################################
+# 检测对应的文件是否在其他分支里有
+##########################################
+
+def git_same_card_number(card_location):
+    cards = Card.objects.filter(card_location=card_location)
+    count = len(cards)
+    logger.info("git_same_card_number:%s %s" % (card_location, count))
+    return count
 
 
 def delete_file(self, key, user,role):
@@ -36,9 +47,13 @@ def delete_file(self, key, user,role):
         card = Card.objects.get(id=key)
         logger.debug("delete file: %s %s %s" % (card.branch,card.package_location,card.card_location))
         if settings.GIT_TYPE_FILE  == card.c_type:
-            result = git_utils.delete_file(card.package_location,card.branch,card.card_location)
-            card.delete()
-            return get_file_dir(self,role)
+
+            if git_same_card_number(card.package_location)>1: # 该文件已经被占用
+
+            else:
+                result = git_utils.delete_file(card.package_location,card.branch,card.card_location)
+                card.delete()
+                return get_file_dir(self,role,up)
         elif settings.GIT_TYPE_DIR == card.c_type:
             c = Card.objects.filter(pid=card.id)
             logger.debug("delete file dir: %s %s %s" % (card.branch,card.package_location,card.card_location))
@@ -46,7 +61,7 @@ def delete_file(self, key, user,role):
                 cs.delete()
             result = git_utils.delete_folder(card.package_location,card.branch,card.card_location)
             card.delete()
-            return get_file_dir(self,role)
+            return get_file_dir(self,role,up)
     except Card.DoesNotExist:
         return self.write_json({'errno':1,'msg':'不存在文件'})
 
@@ -762,7 +777,8 @@ class Card_Sort(BaseHandler):
                 card = Card.objects.get(id=keys.get('key'))
                 card.index = keys.get('index')
                 card.save()
-            return file_path(self,up)
+            #FIXME: 
+            return get_file_path_as_card(self,up)
         except Card.DoesNotExist:
             return self.write_json({'errno': 1, 'msg': '卡片不存在！！！',})
         except UserProfile.DoesNotExist:
@@ -881,7 +897,7 @@ class Upload_File(BaseHandler):
                        card.save()
                     if '0' == result.get('errno'):
                         card.save()
-                        return get_file_dir(self,request.POST.get('role'))
+                        return get_file_dir(self,request.POST.get('role'),up)
                     else :
                         return self.write_json({'errno': 1,'msg':'上传文件失败!'})
                 else:
@@ -902,7 +918,7 @@ class Create_File(BaseHandler):
         logger.info("create file: %s %s %s" % (role, types, card_info))
         try:
             up = UserProfile.objects.get(username=request.user)
-            if str(settings.GIT_TYPE_DIR) == types:
+            if '0' == types:
                 key = card_info.get('key')
                 folder_name = card_info.get('file_name')
                 card_info = Card.objects.filter(id=key,c_type=1)
@@ -933,6 +949,11 @@ class Create_File(BaseHandler):
                     path = os.path.join(folder.card_location,folder_name)
 
                 logger.debug("PARAM: %s %s %s %s %s" % (str(folder_location), str(package_id), str(folder_branch), str(folder_id), str(path)))
+
+                #
+                #if git_same_card_number(package_id,path)>0:
+                #    return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
+
                 card = Card()
                 card.package_id = package_id
                 card.branch = folder_branch
@@ -946,12 +967,12 @@ class Create_File(BaseHandler):
                 result = git_utils.create_dir(folder_location,folder_branch,path)
                 card.save()
 
-                return get_file_dir(self,role)
+                return get_file_dir(self,role, up)
                 #else :
                 #   return self.write_json({'errno': 1,'msg':'新建文件失败！！!'})
 
             #FIXME
-            elif str(settings.GIT_TYPE_FILE) == types:
+            elif '1' == types:
                 key = card_info.get('key')
                 folder_name = card_info.get('file_name')
                 tags = card_info.get('tags')
@@ -1019,6 +1040,10 @@ class Create_File(BaseHandler):
                     package_location = folder.package_location
                     pid = folder.id
                     path = os.path.join(folder.card_location,file_name)
+
+
+                if git_same_card_number(path)>0:
+                    return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
 
                 cards = Card()
                 cards.package_id = package_id
@@ -1214,7 +1239,7 @@ class Homework_Page(BaseHandler):
         msg = json.loads(request.body)
         try:
             up = UserProfile.objects.get(username=request.user)
-            path = file_paths(self,msg.get('key'),up)
+            path = get_file_paths_as_package(self,msg.get('key'),up)
             return path
         except UserProfile.DoesNotExist:
             return self.write_json({'errno':1,'msg':'不存在用户！！!'})
@@ -1545,7 +1570,7 @@ class Batch_Modify_File(BaseHandler):
                     card.create_user = up
                     card.modify_count +=1
                     card.save()
-            return get_file_dir(self,up)
+            return get_file_dir(self, role, up)
         except Card.DoesNotExist:
              return self.write_json({'errno':1,'msg':'不存在卡片！！!'})
 
@@ -2398,7 +2423,7 @@ class Create_Package(BaseHandler):
             if '0' == result.get('errno'):
                 packages.package_location = result.get('data')['repo']
                 packages.save()
-                return file_path(self,up)
+                return get_file_path_as_card(self,up)
             else :
                 return self.write_json({'errno':1,'msg':'创建卡包失败!!!'})
         except ValueError:
@@ -2420,10 +2445,10 @@ class Delete_Package(BaseHandler):
             all_card = Card.objects.filter(package_location=package.package_location)
             all_card.delete()
 
-            #FIXME
+            #FIXME: bug second param
             result =git_utils.delete_package(package.package_location)
             package.delete()
-            return file_path(self,up)
+            return get_file_path_as_card(self,up)
         except Master_Package.DoesNotExist:
             try:
                 package = Branch_Package.objects.get(id=msg.get('key'))
@@ -2764,7 +2789,7 @@ class Teacher_Package(BaseHandler):
     @auth_decorator
     def post(self, request):
         up = UserProfile.objects.get(username=request.user)
-        path = file_path(self, up, False)
+        path = get_file_path_as_card(self, up, False)
         return self.write_json(path)
 
 
@@ -2887,7 +2912,7 @@ class Merge_Branch(BaseHandler):
                 mess.message = '您申请的' + create_pack.package_name + '卡包已同意合并变更'
                 mess.content = '该卡包已合并到主版本中'
                 mess.save()
-                path = file_path(self,up,False);
+                path = get_file_path_as_card(self,up,False);
                 return self.write_json({'errno':0,'msg':'success'})
             else:
                 conflict_card = result.get('data')
@@ -3018,7 +3043,7 @@ class Merge_Master(BaseHandler):
             r = requests.post(url,data=data)
             result = r.json()
             if '0' == result.get('errno'):
-                path = assi_file_path(self,up,False);
+                path = get_assi_file_path_as_card(self,up,False);
                 return self.write_json(path)
             else:
                 conflict_card = result.get('data')
@@ -3446,9 +3471,9 @@ class Upload_Zip(BaseHandler):
                                                 else:
                                                     unuse.append({'file':filename[7:],'type':1})
             if '0' == role:
-                file_dir = file_path(self, up, False)
+                file_dir = get_file_path_as_card(self, up, False)
             elif '1' == role:
-                file_dir = assi_file_path(self, up, False)
+                file_dir = get_assi_file_path_as_card(self, up, False)
             file_dir['error_file'] = unuse
             return self.write_json(file_dir)
         except UserProfile.DoesNotExist:
@@ -3555,9 +3580,8 @@ class Upload_Zip(BaseHandler):
                                             else:
                                                 unuse.append({'file':filename[7:],'type':1})
             if '0' == role:
-                file_dir = file_path(self, up, False)
+                file_dir = get_file_path_as_card(self, up, False)
             elif '1' == role:
-                file_dir = assi_file_path(self, up, False)
+                file_dir = get_assi_file_path_as_card(self, up, False)
             file_dir['error_file'] = unuse
             return self.write_json(file_dir)
-
