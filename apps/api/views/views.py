@@ -48,8 +48,8 @@ def delete_file(self, key, user,role):
         logger.debug("delete file: %s %s %s" % (card.branch,card.package_location,card.card_location))
         if settings.GIT_TYPE_FILE  == card.c_type:
 
-            if git_same_card_number(card.package_location)>1: # 该文件已经被占用
-
+            if git_same_card_number(card.card_location)>1: # 该文件已经被占用
+                return self.write_json({'errno':settings.ERR_FILE_USED,'msg':'其他用户正在操作，无法删除'})
             else:
                 result = git_utils.delete_file(card.package_location,card.branch,card.card_location)
                 card.delete()
@@ -58,12 +58,16 @@ def delete_file(self, key, user,role):
             c = Card.objects.filter(pid=card.id)
             logger.debug("delete file dir: %s %s %s" % (card.branch,card.package_location,card.card_location))
             for cs in c:
+                if git_same_card_number(cs.card_location)>1: # 有文件已经被占用
+                    return self.write_json({'errno':settings.ERR_FILE_USED,'msg':'有文件其他用户正在操作，无法删除'})
+
+            for cs in c:
                 cs.delete()
             result = git_utils.delete_folder(card.package_location,card.branch,card.card_location)
             card.delete()
             return get_file_dir(self,role,up)
     except Card.DoesNotExist:
-        return self.write_json({'errno':1,'msg':'不存在文件'})
+        return self.write_json({'errno':1,'msg':'文件不存在'})
 
 
 class Create_Course(BaseHandler):
@@ -1137,9 +1141,6 @@ class Delete_File(BaseHandler):
         logger.info("Delete_File: %s %s" % (request.user, keys))
         role = msg.get('role')
 
-        ### BAT DELETE
-        #r = delete_files(self, keys, up, role)
-        ### OLD METHOD
         for key in keys:
             r = delete_file(self,key,up,role)
         return r
