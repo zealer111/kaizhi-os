@@ -1,0 +1,7 @@
+*.log
+__pycache__
+*.pyc
+*.json
+backup
+static
+run.sh

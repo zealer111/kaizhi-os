@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>欢迎页面-X-admin2.0</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width,user-scalable=yes, minimum-scale=0.4, initial-scale=0.8,target-densitydpi=low-dpi"/>
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon"/>
+    <link rel="stylesheet" href="./css/font.css">
+    <link rel="stylesheet" href="./css/xadmin.css">
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./lib/layui/layui.js" charset="utf-8"></script>
+    <script type="text/javascript" src="./js/xadmin.js"></script>
+
+    <!-- 让IE8/9支持媒体查询，从而兼容栅格 -->
+    <!--[if lt IE 9]>
+    <script src="https://cdn.staticfile.org/html5shiv/r29/html5.min.js"></script>
+    <script src="https://cdn.staticfile.org/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+<div class="">
+    <form class="layui-form" action="">
+        <div class="layui-form-item">
+            <label class="layui-form-label">ID</label>
+            <div class="layui-input-inline">
+                <input type="text" name="buy_id" id="buy_id"  autocomplete="off"
+                       class="layui-input" value="" disabled="disabled"/>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">购买用户</label>
+            <div class="layui-input-inline" >
+                <select lay-verify="required" name="userid" id="userid" lay-filter="userid" lay-search="">
+                    <option value="">-请选择用户-</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">课程</label>
+            <div class="layui-input-inline" >
+                <select lay-verify="required"  id="course_id" lay-filter="course_id" name="course_id" lay-search="">
+                    <option value="">-请选课程-</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label  class="layui-form-label">
+                <span class="x-red"></span>价格
+            </label>
+            <div class="layui-input-inline">
+                <input type="number" id="price" name="price" required=""
+                       autocomplete="off" class="layui-input">
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">是否付款</label>
+            <div class="layui-input-inline">
+                <select id="status"  name="status" lay-verify="required">
+                    <option value=""></option>
+                    <option value="1">是</option>
+                    <option value="0">否</option>
+
+                </select>
+            </div>
+        </div>
+
+
+        <div class="layui-form-item">
+            <label  class="layui-form-label">
+            </label>
+            <button  class="layui-btn" lay-submit lay-filter="edit" >
+                保存
+            </button>
+        </div>
+        <!--默认按钮开始-->
+
+    </form>
+</div>
+<script>
+    layui.use(['form','layer'], function(){
+        $ = layui.jquery;
+        var form = layui.form
+            ,layer = layui.layer;
+        $(function () {
+            $.ajax({
+                url:"http://kaizhi2.wegox.cn/t/manager/get_all_user",
+                method:"POST",
+                page:true,
+                success:function (data) {
+                    if (data.errno === 0){
+                        var s = JSON.stringify(data.data.map(function (item) {
+                            return {id:item.id,name:item.username};
+                        }));
+                        $.each($.parseJSON(s),function (index,value) {
+                            $('#userid').append("<option value='"+value.id+"'>"+value.name+"<option>");
+                            $('#userid').val(JSON.parse(window.localStorage.getItem('BUYINFO')).userid);
+
+                            form.render();
+                        });
+
+                    }else {
+                        layer.msg(data.msg);
+                    }
+                }
+            });
+        });
+        $(function () {
+            $.ajax({
+                url:"http://kaizhi2.wegox.cn/t/manager/get_all_course",
+                method:"POST",
+                page:true,
+                success:function (data) {
+                    if (data.errno === 0){
+                        var s = JSON.stringify(data.data.map(function (item) {
+
+                            return {id:item.id,title:item.title};
+                        }));
+                        $.each($.parseJSON(s),function (index,value) {
+                            $('#course_id').append("<option value='"+value.id+"'>"+value.title+"<option>");
+                            $('#course_id').val(JSON.parse(window.localStorage.getItem('BUYINFO')).courseid);
+                            form.render();
+                        });
+
+                    }else {
+                        layer.msg(data.msg);
+                    }
+                }
+            });
+        });
+        //自定义验证规则
+        form.verify({
+            nikename: function(value){
+                if(value.length < 5){
+                    return '昵称至少得5个字符啊';
+                }
+            }
+            ,pass: [/(.+){6,12}$/, '密码必须6到12位']
+            ,repass: function(value){
+                if($('#L_pass').val()!=$('#L_repass').val()){
+                    return '两次密码不一致';
+                }
+            }
+        });
+        //监听提交
+        form.on('submit(edit)', function(data){
+            $.ajax({
+                url:"http://kaizhi2.wegox.cn/t/manager/upd_buy_course",
+                method:"POST",
+                dataType:"json",
+                data:JSON.stringify(data.field),
+                success:function (data) {
+                    if (data.errno === 0){
+                        layer.alert("修改成功", {icon: 6},function () {
+                            // 获得frame索引
+                            var index = parent.layer.getFrameIndex(window.name);
+                            //关闭当前frame
+                            parent.layer.close(index);
+                            window.parent.location.reload();
+                        });
+
+                    }else {
+                        layer.msg(data.msg);
+                    }
+                }
+            });
+            //发异步，把数据提交给php
+
+            return false;
+        });
+
+
+
+    });
+</script>
+
+<script>
+    $('#buy_id').val(JSON.parse(window.localStorage.getItem('BUYINFO')).id);
+    $('#price').val(JSON.parse(window.localStorage.getItem('BUYINFO')).price);
+    $('#status').val(JSON.parse(window.localStorage.getItem('BUYINFO')).status);
+
+</script>
+
+
+</body>
+
+</html>

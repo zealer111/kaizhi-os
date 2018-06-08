@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>layui</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="./css/layui.css">
+
+</head>
+<body>
+
+<form class="layui-form" action="">
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">选择用户</label>
+            <div class="layui-input-block layui-form-pane" >
+                <select lay-verify="required"  id="sel" lay-filter="sel" lay-search="" name="create_user">
+                    <option value="">-请选择用户-</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">创建的卡包</label>
+            <div class="layui-input-block layui-form-pane" >
+                <select lay-verify="required"  id="sel_pac" lay-filter="sel_pac" name="package" lay-search="">
+
+                </select>
+            </div>
+
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">选择协作者</label>
+            <div class="layui-input-block layui-form-pane" >
+                <select lay-verify="required"   id="sel_user" lay-filter="sel_user" name="assi_user" lay-search="">
+
+                </select>
+            </div>
+
+        </div>
+        <div class="layui-inline">
+            <button type="button" class="layui-btn" lay-submit lay-filter="add">确定</button>
+        </div>
+    </div>
+
+</form>
+<script type="text/javascript" src="./lib/layui/layui.js" charset="utf-8"></script>
+
+<script>
+    function renderForm() {
+        layui.use('form',function () {
+            form = layui.form;
+            form.render('select');
+        })
+    }
+
+    layui.use(['form'], function () {
+            $ = layui.jquery;
+        $(function () {
+            $.ajax({
+                url:"http://kaizhi2.wegox.cn/t/manager/get_all_user",
+                method:"POST",
+                page:true,
+                success:function (data) {
+                    if (data.errno === 0){
+                        var s = JSON.stringify(data.data.map(function (item) {
+                            return {id:item.id,phone:item.phone};
+                        }));
+                        $.each($.parseJSON(s),function (index,value) {
+                            $('#sel').append("<option value='"+value.id+"'>"+value.phone+"<option>");
+                        });
+                        renderForm();
+                    }else {
+                        layer.msg(data.msg);
+                    }
+                }
+            });
+        });
+
+    });
+
+</script>
+<script>
+    function renderForm() {
+        layui.use('form',function () {
+            form = layui.form;
+            form.render('select');
+        })
+    }
+    layui.use('form', function(){
+        var form = layui.form;
+        var value = 0;
+        var name = '';
+        form.on(['select(sel)'], function (data) {
+            value = data.value;
+            name = data.elem[data.elem.selectedIndex].text;
+            $('#sel_pac').html("");
+            $('#sel_user').html("");
+            $.ajax({
+                url:"http://kaizhi2.wegox.cn/t/manager/user_package",
+                method:"POST",
+                page:true,
+                data:{id:value},
+                success:function (data) {
+                    if (data.errno === 0){
+                        var s = JSON.stringify(data.data.map(function (item) {
+                            return {id:item.id,name:item.package_name};
+                        }));
+                        $.each($.parseJSON(s),function (index,val) {
+                            $('#sel_pac').append("<option value='"+val.id+"'>"+val.name+"<option>");
+                        });
+                        var u = JSON.stringify(data.user.map(function (item) {
+                            return {id:item.id,phone:item.phone};
+                        }));
+
+                        $.each($.parseJSON(u),function (index,val_phone) {
+                            $('#sel_user').append("<option value='"+val_phone.id+"'>"+val_phone.phone+"<option>");
+                        });
+                           renderForm();
+                    }else {
+                        layer.msg(data.msg);
+                    }
+                }
+            });
+
+        });
+
+        form.on('submit(add)',function (data) {
+            $.ajax({
+                url:"http://kaizhi2.wegox.cn/t/manager/user_assistant",
+                method:"POST",
+                page:true,
+                data:JSON.stringify(data.field),
+                success:function (data) {
+                    if (data.errno === 0){
+                        layer.msg(data.msg);
+                        layer.alert("添加成功",function () {
+                            var index = parent.layer.getFrameIndex(window.name);
+                            //关闭当前frame
+                            window.parent.location.reload();
+                            parent.layer.close(index);
+                        });
+                    }else {
+                        layer.msg(data.msg);
+                    }
+                }
+            });
+
+        })
+
+    });
+</script>
+
+
+</body>
+</html>

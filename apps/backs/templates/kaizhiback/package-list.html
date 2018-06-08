@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>开智后台管理系统</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width,user-scalable=yes, minimum-scale=0.4, initial-scale=0.8,target-densitydpi=low-dpi" />
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <!--<link rel="stylesheet" href="./css/font.css">-->
+    <link rel="stylesheet" href="./css/layui.css">
+    <script type="text/javascript" src="https://cdn.bootcss.com/jquery/3.2.1/jquery.min.js"></script>
+    <script type="text/javascript" src="./lib/layui/layui.js" charset="utf-8"></script>
+    <script type="text/javascript" src="./js/xadmin.js"></script>
+    <!-- 让IE8/9支持媒体查询，从而兼容栅格 -->
+    <!--[if lt IE 9]>
+    <script src="https://cdn.staticfile.org/html5shiv/r29/html5.min.js"></script>
+    <script src="https://cdn.staticfile.org/respond.js/1.4.2/respond.min.js"></script>
+
+
+    <![endif]-->
+</head>
+
+<body>
+
+
+<div class="x-body" >
+    <div class="userTable" align="center">
+        搜索卡包：
+        <div class="layui-inline">
+            <input class="layui-input" name="keyword" id="search" autocomplete="off" placeholder="请输入卡包名称">
+        </div>
+        <button class="layui-btn" data-type="reload">搜索</button>
+    </div>
+    <xblock class="layui-btn-group batchDelete">
+        <button class="layui-btn layui-btn-danger" data-type="getCheckData"><i class="layui-icon"></i>批量删除</button>
+        <button class="layui-btn" onclick="x_admin_show('添加用户','./package-add.html')"><i class="layui-icon"></i>添加</button>
+
+    </xblock>
+    <!--<table class="layui-table" id="table_user" lay-filter="table_user">-->
+
+
+    <!--</table>-->
+    <table class="layui-table"  lay-data="{id:'userList',url:'http://kaizhi2.wegox.cn/t/manager/get_all_package',
+                  page:true, method: 'POST', limit:10}" lay-filter="table_user">
+        <thead>
+        <tr>
+            <th lay-data="{checkbox: true, fixed: true}"></th>
+            <th lay-data="{field:'id', width:300,height:180, sort: true, fixed: true}">ID</th>
+            <th lay-data="{field:'name', width:180,}">卡包名称</th>
+            <th lay-data="{field:'create_user', width:180}">创建用户</th>
+            <th lay-data="{field:'course', width:150, }">课程</th>
+            <th lay-data="{field:'branch_name', width:150, }">分支</th>
+            <th lay-data="{field:'role', width:150, }">是否协作</th>
+            <th lay-data="{field:'sign', width:360}">标记</th>
+            <th lay-data="{field:'create_time', width:180, sort: true}">创建时间</th>
+            <th lay-data="{fixed: 'right', width:190, align:'center', toolbar: '#bar'}">操作</th>
+        </tr>
+        </thead>
+    </table>
+    <!--<div class="page" id="page">-->
+    <!--<div>-->
+    <!--<a class="prev" href="">&lt;&lt;</a>-->
+    <!--<a class="num" href="">1</a>-->
+    <!--<span class="current">2</span>-->
+    <!--<a class="num" href="">3</a>-->
+    <!--<a class="num" href="">489</a>-->
+    <!--<a class="next" href="">&gt;&gt;</a>-->
+    <!--</div>-->
+
+    <!--</div>-->
+
+</div>
+<script type="text/javascript" src="./lib/layui/layui.all.js" charset="utf-8"></script>
+<script>
+
+    layui.use('table', function(){
+        var table = layui.table;
+        //监听表格复选框选择
+        table.on('checkbox(table_user)', function(obj){
+            console.log(obj)
+        });
+
+        //监听工具条
+        table.on('tool(table_user)', function(obj){
+            var packagedata = obj.data;
+            window.localStorage.setItem('package',JSON.stringify(packagedata));
+            if(obj.event === 'edit'){
+                layer.open({
+                    type: 2, //type为2，才会显示网页
+                    title: '添加标记',
+                    area: ['500px', '500px'], //宽高
+                    content: 'package-add.html', //子页面地址，会通过urls.py
+                    shadeClose: true, //点击遮罩关闭层
+
+                });
+
+            } else if(obj.event === 'del'){
+                layer.confirm('真的删除行么', function(data){
+                    $.ajax({
+                        url:"http://kaizhi2.wegox.cn/t/manager/delete_package",
+                        method:"POST",
+                        dataType:"json",
+                        data:JSON.stringify([{id:obj.data.id}]),
+                        success:function (data) {
+                            if (data.errno === 0){
+                                location.reload()
+
+                            }else {
+                                layer.msg(data.msg);
+                            }
+                        }
+                    });
+                    layer.close(data);
+
+                });
+            }
+        });
+        var $ = layui.$, active = {
+            reload: function(){
+                var keyword = $('#search');
+
+                //执行重载
+                table.reload('userList', {
+                    url:"http://kaizhi2.wegox.cn/t/manager/get_all_package",
+                    method:"POST",
+                    where: {name: keyword.val()},
+                    success:function (data) {
+                        if (data.errno === 0){
+                            location.reload()
+
+                        }else {
+                            layer.msg(data.msg);
+                        }
+                    },
+                    page:true
+                });
+            }
+
+        };
+
+        $('.x-body .layui-btn').on('click', function(){
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+        var a = layui.$, dactive = {
+            getCheckData: function(){ //获取选中数据
+                var checkStatus = table.checkStatus('userList');
+                const data = checkStatus.data;
+                layer.confirm('确定要删除所选对象吗？',function () {
+                    $.ajax({
+                        url:"http://kaizhi2.wegox.cn/t/manager/delete_package",
+                        method:"POST",
+                        data:JSON.stringify(data.map(function (item) {
+                            return {id:item.id}
+                        })),
+                        success:function (data) {
+                            if (data.errno === 0) {
+                                location.reload()
+
+                            } else {
+                                layer.msg(data.msg);
+                            }
+                        }
+                    });
+
+                });
+            }
+        };
+        a('.batchDelete .layui-btn').on('click', function(){
+            var type = $(this).data('type');
+            dactive[type] ? dactive[type].call(this) : '';
+        });
+
+
+    });
+</script>
+
+
+
+<script type="text/html" id="bar">
+
+    <a title="添加" lay-event="edit" href="javascript:;">
+        <i class="layui-icon"></i>
+    </a>
+    <!--<a title="编辑" lay-event="edit" href="javascript:;">-->
+        <!--<i class="layui-icon">&#xe642;</i>-->
+    <!--</a>-->
+    <a title="删除" lay-event="del" href="javascript:;">
+        <i class="layui-icon">&#xe640;</i>
+    </a>
+    <!--<button class="layui-btn layui-btn-sm" lay-event="edit" >编辑</button>-->
+    <!--<button class="layui-btn layui-btn-danger layui-btn-sm" lay-event="del">删除</button>-->
+</script>
+
+</body>
+
+</html>
