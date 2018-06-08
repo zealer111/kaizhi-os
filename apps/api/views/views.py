@@ -19,8 +19,8 @@ from pathlib import Path
 from django.db.models import Q
 from apps import settings
 import operator
-from apps import log_utils
-from apps.api import git_utils
+from libs import log_utils
+from libs import git_utils
 import logging
 
 logging.basicConfig(filename='/tmp/kaizhi.log',level=logging.DEBUG)
@@ -2756,7 +2756,7 @@ class File_Diff(BaseHandler):
         except User_Branch.DoesNotExist:
             return self.write_json({'errno':1, 'msg': '不存在分支信息！！！'})
         except Card.DoesNotExist:
-            return self.write_json({'errno':1, 'msg': '卡片不存在！！！'})
+            return self.write_json({'errno':1, 'msg': '卡片不存在'})
 
 
 class Teacher_Package(BaseHandler):

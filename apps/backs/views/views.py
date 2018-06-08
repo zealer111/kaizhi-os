@@ -849,7 +849,6 @@ class Upd_User_Info(BaseHandler):
     @logger_decorator
     @transaction.atomic
     def post(self, request):
-        print(request.body)
         user_info = json.loads(request.body)
         try:
             user = UserProfile.objects.get(id=user_info.get('userid'))
@@ -878,4 +877,4 @@ class Upd_User_Info(BaseHandler):
         except UserProfile.DoesNotExist:
              return self.write_json({'errno': 1, 'msg': '不存在用户'})
         except BaseException:
-             return self.write_json({'errno': 1, 'msg': '手机号已存在！！！'})
+             return self.write_json({'errno': 1, 'msg': '手机号已存在'})
