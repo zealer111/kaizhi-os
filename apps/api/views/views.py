@@ -1157,7 +1157,7 @@ class Modify_File(BaseHandler):
         try:
             up = UserProfile.objects.get(username=request.user)
             card = Card.objects.get(id=msg.get('key'))
-            result = git_utils.modiyf_file('0',card.package_location,card,branch,card.card_location,content)
+            result = git_utils.modify_file('0',card.package_location,card.branch,card.card_location,content)
             card.content = content
             card.create_user = up
             card.modify_count += 1
@@ -2692,7 +2692,8 @@ class File_Diff(BaseHandler):
         msg = json.loads(request.body)
         try:
             up = UserProfile.objects.get(username=request.user)
-            if '0' == msg.get('type'):
+            logger.info("File_Diff: %s %s" % (msg.get('type'),msg.get('key')))
+            if settings.GIT_DIFF_FILE == msg.get('type'):
                 c = Card.objects.get(id=msg.get('key'))
                 data = {
                     'type':'0',
@@ -2708,8 +2709,8 @@ class File_Diff(BaseHandler):
                     s = result.get('data')
                     return self.write_json({'errno':0, 'msg': 'success','data':s})
                 else:
-                    return self.write_json({'errno':1, 'msg': '新创建文件无法对比！！！'})
-            elif '1' == msg.get('type'):
+                    return self.write_json({'errno':1, 'msg': '新创建文件无法对比'})
+            elif settings.GIT_DIFF_BRANCH  == msg.get('type'):
                 p = Branch_Package.objects.get(id=msg.get('key'))
                 up = UserProfile.objects.get(username=request.user)
                 message = {}
@@ -2726,14 +2727,16 @@ class File_Diff(BaseHandler):
                         }
                 data = {
                     'role':msg.get('role'),
-                    'type':'1',
+                    'type':settings.GIT_DIFF_BRANCH,
                     'branch':'master',
                     'assi_branch':p.branch,
                     'repo':p.package_location,
                     }
+
                 url = settings.GIT_DIFF
                 r = requests.post(url,data=data)
                 result = r.json()
+
                 if '0' == result.get('errno'):
                     s = result.get('data')
                     ss = s[0] if type(s)==list else s
