@@ -69,7 +69,7 @@ def delete_file(self, key, user,role):
     except Card.DoesNotExist:
         return self.write_json({'errno':1,'msg':'文件不存在'})
 
-
+#教学中心-创建课程
 class Create_Course(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -87,7 +87,7 @@ class Create_Course(BaseHandler):
         short_url = course.get('short_url')
         url = Course.objects.filter(short_url=short_url)
         if url:
-           return self.write_json({'errno': 1, 'msg': '该短连接已存在！！!'})
+           return self.write_json({'errno': 1, 'msg': '该短连接已存在'})
         is_discuss = course.get('is_discuss')
         is_graduate = course.get('is_graduate')
         host = course.get('host')
@@ -99,7 +99,7 @@ class Create_Course(BaseHandler):
         up = UserProfile.objects.get(username=request.user)
         course = Course.objects.filter(title=title)
         if course:
-           return self.write_json({'errno': 1, 'msg': '该课程已存在！！!'})
+           return self.write_json({'errno': 1, 'msg': '该课程已存在'})
         course = Course()
         course.cover = cover
         course.title = title
@@ -151,7 +151,7 @@ class Create_Course(BaseHandler):
                 return self.write_json({'errno':'1','msg':'卡包不存在'})
         return self.write_json({'errno': 0, 'msg': 'success'})
 
-
+#获取课程
 class Get_Course(BaseHandler):
     @logger_decorator
     def post(self, request):
@@ -193,7 +193,7 @@ class Get_Course(BaseHandler):
 
                 except EmptyPage:
                     data = []
-                    return self.write_json({'errno':1, 'msg': '暂无数据！！','data':data})
+                    return self.write_json({'errno':1, 'msg': '暂无数据','data':data})
 
             course = Course.objects.filter(classify=msg.get('classify'))
             data = []
@@ -225,7 +225,7 @@ class Get_Course(BaseHandler):
                                         'total_page':p.num_pages,'data': p.page(page).object_list})
             except EmptyPage:
                 data = []
-                return self.write_json({'errno':1, 'msg': '暂无数据！！','data':data})
+                return self.write_json({'errno':1, 'msg': '暂无数据','data':data})
         data = []
         course = Course.objects.all()
         for courses in course:
@@ -255,9 +255,9 @@ class Get_Course(BaseHandler):
 
         except EmptyPage:
             data = []
-            return self.write_json({'errno':1, 'msg': '暂无数据！！','data':data})
+            return self.write_json({'errno':1, 'msg': '暂无数据','data':data})
 
-
+#教学中心-删除课程
 class Delete_Course(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -296,14 +296,14 @@ class Delete_Course(BaseHandler):
             return self.write_json({'errno': 0, 'msg': 'success','total_count':all_course.count(),
                                     'total_page':pages.num_pages,'data': pages.page(page).object_list})
         except Course.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'课程不存在!!!'})
+            return self.write_json({'errno':1,'msg':'课程不存在'})
         except Master_Package.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'卡包不存在!!!'})
+            return self.write_json({'errno':1,'msg':'卡包不存在'})
         except EmptyPage:
             data = []
-            return self.write_json({'errno':1, 'msg': '暂无数据！！','data':data})
+            return self.write_json({'errno':1, 'msg': '暂无数据','data':data})
 
-
+#教学中心-编辑课程
 class Modify_Course(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -322,7 +322,7 @@ class Modify_Course(BaseHandler):
             course.price_url = msg.get('price_url')
             url = Course.objects.filter(~Q(short_url=course.short_url),short_url=msg.get('short_url'))
             if url:
-                return self.write_json({'errno': 1, 'msg': '该短链接已存在！！!'})
+                return self.write_json({'errno': 1, 'msg': '该短链接已存在'})
             course.short_url = msg.get('short_url')
             course.start_time = msg.get('start_time')
             course.is_fee = msg.get('is_fee')
@@ -377,7 +377,7 @@ class Modify_Course(BaseHandler):
         except Course.DoesNotExist:
             return self.write_json({'errno': 1, 'msg': '不存在课程信息'})
 
-
+#获取单个课程详情
 class Course_Detail(BaseHandler):
     @logger_decorator
     def post(self, request):
@@ -423,7 +423,7 @@ class Course_Detail(BaseHandler):
         except Master_Package.DoesNotExist:
             return self.write_json({'errno': 1, 'msg': '不存在卡包'})
 
-
+#教学中心-我创建的课程
 class My_Create_Course(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -468,16 +468,16 @@ class My_Create_Course(BaseHandler):
             return self.write_json({'errno': 0, 'msg': 'success','total_count':course.count(),
                                     'total_page':p.num_pages,'data': p.page(page).object_list})
         except User_Buy_Record.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '暂无课程信息！！！'})
+            return self.write_json({'errno': 1, 'msg': '暂无课程信息'})
         except Master_Package.DoesNotExist:
             return self.write_json({'errno': 1, 'msg': '不存在卡包'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '用户不存在课程信息！！！'})
+            return self.write_json({'errno': 1, 'msg': '用户不存在课程信息'})
         except EmptyPage:
             data = []
-            return self.write_json({'errno': 1, 'msg': '暂无数据！！！','data':data})
+            return self.write_json({'errno': 1, 'msg': '暂无数据','data':data})
 
-
+#教学中心-搜索我创建的课程
 class Search_My_Create_Course(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -523,16 +523,16 @@ class Search_My_Create_Course(BaseHandler):
             return self.write_json({'errno': 0, 'msg': 'success','total_count':course.count(),
                                     'total_page':p.num_pages,'data': p.page(page).object_list})
         except User_Buy_Record.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '暂无课程信息！！！'})
+            return self.write_json({'errno': 1, 'msg': '暂无课程信息'})
         except Master_Package.DoesNotExist:
             return self.write_json({'errno': 1, 'msg': '不存在卡包'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '用户不存在课程信息！！！'})
+            return self.write_json({'errno': 1, 'msg': '用户不存在课程信息'})
         except EmptyPage:
             data = []
-            return self.write_json({'errno': 1, 'msg': '暂无数据！！！','data':data})
+            return self.write_json({'errno': 1, 'msg': '暂无数据','data':data})
 
-
+#学习中心-我报名的课程
 class My_Course(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -566,15 +566,15 @@ class My_Course(BaseHandler):
                 })
             return self.write_json({'errno': 0, 'msg': 'success','data':data})
         except User_Buy_Record.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '暂无课程信息！！！'})
+            return self.write_json({'errno': 1, 'msg': '暂无课程信息'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '用户不存在课程信息！！！'})
+            return self.write_json({'errno': 1, 'msg': '用户不存在课程信息'})
         except Course.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在课程信息！！！'})
+            return self.write_json({'errno': 1, 'msg': '不存在课程信息'})
         except Course.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在课程信息！！！'})
+            return self.write_json({'errno': 1, 'msg': '不存在课程信息'})
 
-
+#课程搜索
 class Course_Search(BaseHandler):
     @logger_decorator
     def post(self, request):
@@ -608,10 +608,9 @@ class Course_Search(BaseHandler):
                                     'total_count':course.count(),'data': p.page(page).object_list})
         except EmptyPage:
             data = []
-            return self.write_json({'errno':1, 'msg': '暂无数据！！','data':data})
+            return self.write_json({'errno':1, 'msg': '暂无数据','data':data})
 
-
-
+#学习中心-卡片搜索
 class Card_Search(BaseHandler):
     @logger_decorator
     def post(self, request):
@@ -619,7 +618,6 @@ class Card_Search(BaseHandler):
         file_name = info.get('file_name')
         page = info.get('page')
         count = info.get('count')
-
         try:
             card = Card.objects.filter(file_name__contains=file_name,c_type=1)
             data = []
@@ -635,9 +633,9 @@ class Card_Search(BaseHandler):
             return self.write_json({'errno': 0, 'msg': 'success','total_page':p.num_pages,
                                     'total_count':card.count(),'data': p.page(page).object_list})
         except Card.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '无信息!!!',})
+            return self.write_json({'errno': 1, 'msg': '无信息',})
 
-
+#教学中心-我创建的卡片搜索
 class My_Create_Card_Search(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -717,7 +715,6 @@ class My_Create_Card_Search(BaseHandler):
                         for c in card:
                             da.append(c.id)
                     return da
-
                 s = search_file(folder.id)
                 for ss in s:
                     card = Card.objects.filter(id=ss)
@@ -736,7 +733,7 @@ class My_Create_Card_Search(BaseHandler):
         except Card.DoesNotExist:
             return self.write_json({'errno': 1, 'msg': '无信息!!!',})
 
-
+#学习中心-讨论卡片搜索
 class Discuss_Card_Search(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -766,9 +763,9 @@ class Discuss_Card_Search(BaseHandler):
             return self.write_json({'errno': 0, 'msg': 'success','total_page':p.num_pages,
                                     'total_count':card.count(),'data': p.page(page).object_list})
         except Card.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '无信息!!!',})
+            return self.write_json({'errno': 1, 'msg': '无信息',})
 
-
+#教学中心-卡片排序
 class Card_Sort(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -781,14 +778,13 @@ class Card_Sort(BaseHandler):
                 card = Card.objects.get(id=keys.get('key'))
                 card.index = keys.get('index')
                 card.save()
-            #FIXME: 
             return get_file_path_as_card(self,up)
         except Card.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '卡片不存在！！！',})
+            return self.write_json({'errno': 1, 'msg': '卡片不存在'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '用户不存在！！！',})
+            return self.write_json({'errno': 1, 'msg': '用户不存在'})
 
-
+#教学中心-我协作的卡包
 class My_Assistant(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -836,7 +832,7 @@ class My_Assistant(BaseHandler):
             return sz
         return self.write_json({'errno':0, 'msg': 'success','data':getChildren()})
 
-
+#教学中心-上传文件
 class Upload_File(BaseHandler):
     @logger_decorator
     @transaction.atomic
@@ -903,14 +899,14 @@ class Upload_File(BaseHandler):
                         card.save()
                         return get_file_dir(self,request.POST.get('role'),up)
                     else :
-                        return self.write_json({'errno': 1,'msg':'上传文件失败!'})
+                        return self.write_json({'errno': 1,'msg':'上传文件失败'})
                 else:
-                    return self.write_json({'errno': 1,'msg':'文件已存在！！！!'})
+                    return self.write_json({'errno': 1,'msg':'文件已存在'})
             else :
-                return self.write_json({'errno': 1,'msg':'文件格式错误！！！!'})
+                return self.write_json({'errno': 1,'msg':'文件格式错误'})
         return self.write_json({'errno': 0,'msg':'success'})
 
-
+#教学中心-创建文件
 class Create_File(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -933,13 +929,11 @@ class Create_File(BaseHandler):
                     folder = Card.objects.filter(pid=package.id,package_id=package.id,file_name=folder_name)
                     if folder :
                         return self.write_json({'errno':1,'msg':'文件夹已存在'})
-
                     folder_location = package.package_location
                     package_id = package.id
                     folder_id = package.id
                     folder_branch = package.branch
                     path = os.path.join(package.package_location,folder_name)
-
                 else:
                     folder = Card.objects.get(id=key)
                     f = Card.objects.filter(pid=folder.id,file_name=folder_name)
@@ -951,9 +945,7 @@ class Create_File(BaseHandler):
                     folder_branch = folder.branch
                     folder_id = folder.id
                     path = os.path.join(folder.card_location,folder_name)
-
                 logger.debug("PARAM: %s %s %s %s %s" % (str(folder_location), str(package_id), str(folder_branch), str(folder_id), str(path)))
-
                 #
                 #if git_same_card_number(package_id,path)>0:
                 #    return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
@@ -972,10 +964,7 @@ class Create_File(BaseHandler):
                 card.save()
 
                 return get_file_dir(self,role, up)
-                #else :
-                #   return self.write_json({'errno': 1,'msg':'新建文件失败！！!'})
 
-            #FIXME
             elif '1' == types:
                 key = card_info.get('key')
                 folder_name = card_info.get('file_name')
@@ -1045,7 +1034,6 @@ class Create_File(BaseHandler):
                     pid = folder.id
                     path = os.path.join(folder.card_location,file_name)
 
-
                 if git_same_card_number(path)>0:
                     return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
 
@@ -1068,7 +1056,7 @@ class Create_File(BaseHandler):
         except Card.DoesNotExist:
             return self.write_json({'errno':1,'msg':'卡片不存在！！！'})
 
-
+#学习中心-创建讨论卡片
 class Create_Discuss_File(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1081,7 +1069,7 @@ class Create_Discuss_File(BaseHandler):
             up = UserProfile.objects.get(username=request.user)
             c = Card.objects.filter(package_id=package.id,file_name=(msg.get('title')))
             if c:
-                return self.write_json({'errno':1,'msg':'讨论已存在！！！'})
+                return self.write_json({'errno':1,'msg':'讨论已存在'})
             card = Card()
             path = os.path.join(package.package_location,(msg.get('title')))
             card.package_id = package.id
@@ -1127,9 +1115,9 @@ class Create_Discuss_File(BaseHandler):
             message = {'all_disc':other_disc,'disc_detail':detail}
             return self.write_json({'errno':0,'msg':'success','data':message})
         except Master_Package.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'卡包不存在！！!'})
+            return self.write_json({'errno':1,'msg':'卡包不存在'})
 
-
+#教学中心-删除文件
 class Delete_File(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1145,7 +1133,7 @@ class Delete_File(BaseHandler):
             r = delete_file(self,key,up,role)
         return r
 
-#FIXME
+#教学中心-编辑文件
 class Modify_File(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1158,17 +1146,21 @@ class Modify_File(BaseHandler):
             up = UserProfile.objects.get(username=request.user)
             card = Card.objects.get(id=msg.get('key'))
             result = git_utils.modify_file('0',card.package_location,card.branch,card.card_location,content)
-            card.content = content
-            card.create_user = up
-            card.modify_count += 1
-            card.save()
+            #判断内容是否修改
+            if '0' == result.get('errno'):
+                card.content = content
+                card.create_user = up
+                card.modify_count += 1
+                card.save()
+            else:
+                return self.write_json({'errno':1,'msg':'内容无变更'})
             return get_file_dir(self,role,up)
         except UserProfile.DoesNotExist:
-             return self.write_json({'errno':1,'msg':'用户不存在！！!'})
+             return self.write_json({'errno':1,'msg':'用户不存在'})
         except Card.DoesNotExist:
-             return self.write_json({'errno':1,'msg':'不存在卡片！！!'})
+             return self.write_json({'errno':1,'msg':'不存在卡片'})
 
-
+#学习中心-编辑讨论卡片
 class Modify_Discuss_File(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1226,13 +1218,13 @@ class Modify_Discuss_File(BaseHandler):
             message = {'all_disc':other_disc,'disc_detail':detail}
             return self.write_json({'errno':0,'msg':'success','data':message})
         except UserProfile.DoesNotExist:
-             return self.write_json({'errno':1,'msg':'用户不存在！！!'})
+             return self.write_json({'errno':1,'msg':'用户不存在'})
         except Master_Package.DoesNotExist:
-             return self.write_json({'errno':1,'msg':'卡包不存在！！!'})
+             return self.write_json({'errno':1,'msg':'卡包不存在'})
         except Card.DoesNotExist:
-             return self.write_json({'errno':1,'msg':'不存在卡片！！!'})
+             return self.write_json({'errno':1,'msg':'不存在卡片'})
 
-
+#学习中心-作业列表
 class Homework_Page(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1243,9 +1235,9 @@ class Homework_Page(BaseHandler):
             path = get_file_paths_as_package(self,msg.get('key'),up)
             return path
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在用户！！!'})
+            return self.write_json({'errno':1,'msg':'不存在用户'})
 
-
+#学习中心-讨论列表
 class Discuss_Page(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1332,14 +1324,7 @@ class Discuss_Page(BaseHandler):
                     is_my = 1
                 else:
                      is_my = 0
-                datas = {
-                    'branch':'master',
-                    'repo':cards.package_location,
-                    'file_path':cards.card_location
-                    }
-                url = settings.GIT_FILE_CONTENT
-                r = requests.post(url,data=datas)
-                result = r.json()
+                result = git_utils.get_file_content(cards.package_location,'master',cards.card_location)
                 content = result['data'].get('content')
                 data.append({
                     'title':cards.file_name,
@@ -1405,7 +1390,6 @@ class Discuss_Page(BaseHandler):
                     pag = Paginator(sorted(l4,key=lambda x:(x['count']),reverse=True),count)
                     return self.write_json({'errno': 0, 'msg': 'success','total_count':len(l4),
                                     'total_page':pag.num_pages,'data': pag.page(page).object_list})
-
             else:
                 l4=[]
                 if len(data) > 0:
@@ -1451,12 +1435,12 @@ class Discuss_Page(BaseHandler):
             return self.write_json({'errno': 0, 'msg': 'success','total_count':len(l4),
                                     'total_page':pag.num_pages,'data': pag.page(page).object_list})
         except Card.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在卡片！！!'})
+            return self.write_json({'errno':1,'msg':'不存在卡片'})
         except Master_Package.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在卡包！！!'})
+            return self.write_json({'errno':1,'msg':'不存在卡包'})
 
 
-
+#学习中心-关闭讨论
 class All_Close_Discuss(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1487,12 +1471,12 @@ class All_Close_Discuss(BaseHandler):
             return self.write_json({'errno': 0, 'msg': 'success','total_count':card.count(),
                                     'total_page':p.num_pages,'data': p.page(page).object_list})
         except Card.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在卡片！！!'})
+            return self.write_json({'errno':1,'msg':'不存在卡片'})
         except Master_Package.DoesNotExist:
             return self.write_json({'errno':1,'msg':'不存在卡包！！!'})
 
 
-
+#学习中心-卡片评论
 class Comment_Page(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1523,11 +1507,11 @@ class Comment_Page(BaseHandler):
             return self.write_json({'errno': 0, 'msg': 'success','total_count':Card_Comment.objects.filter(card=c).count(),
                                 'total_page':p.num_pages,'data': p.page(page).object_list})
         except Card.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在卡片！！!'})
+            return self.write_json({'errno':1,'msg':'不存在卡片'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在用户！！!'})
+            return self.write_json({'errno':1,'msg':'不存在用户'})
 
-
+#教学中心-批量修改文件
 class Batch_Modify_File(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1567,15 +1551,19 @@ class Batch_Modify_File(BaseHandler):
                 for content in content_list:
                     card = Card.objects.get(id=content.get('key'))
                     result = git_utils.modify_file('0',card.package_location,card.branch,card.card_location,content.get('content'))
-                    card.content = content.get('content')
-                    card.create_user = up
-                    card.modify_count +=1
-                    card.save()
+                    #判断内容是否变更
+                    if '0' == result.get('errno'):
+                        card.content = content.get('content')
+                        card.create_user = up
+                        card.modify_count +=1
+                        card.save()
+                    else:
+                        return self.write_json({'errno':1,'msg':'内容无变更'})
             return get_file_dir(self, role, up)
         except Card.DoesNotExist:
-             return self.write_json({'errno':1,'msg':'不存在卡片！！!'})
+             return self.write_json({'errno':1,'msg':'不存在卡片'})
 
-
+#教学中心-复制、移动文件
 class Copy_File(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1590,7 +1578,7 @@ class Copy_File(BaseHandler):
             try:
                 up = UserProfile.objects.get(username=request.user)
                 package_dir = get_package(self,copy_to_key)
-                if package_dir: #FIXME
+                if package_dir:
                     for keys in copy_key:
                         card = Card.objects.get(id=keys)
                         _card = Card.objects.filter(pid=package_dir.id,file_name=card.file_name)
@@ -1617,10 +1605,10 @@ class Copy_File(BaseHandler):
                             card_dir = Card.objects.get(id=copy_to_key)
                             c = Card.objects.get(id=keys)
                         except Card.DoesNotExist:
-                            return self.write_json({'errno':1,'msg':'卡片不存在！！！'})
+                            return self.write_json({'errno':1,'msg':'卡片不存在'})
                         _card = Card.objects.filter(pid=card_dir.id,file_name=c.file_name)
                         if _card:
-                            return self.write_json({'errno':'1','msg':'文件已存在！！！'})
+                            return self.write_json({'errno':'1','msg':'文件已存在'})
                         cp_card = Card()
                         cp_card.package_id = card_dir.package_id
                         cp_card.branch = card_dir.branch
@@ -1638,7 +1626,7 @@ class Copy_File(BaseHandler):
 
                 return get_file_dir(self,role,up)
             except Card.DoesNotExist:
-                return self.write_json({'errno':1,'msg':'卡片不存在！！！'})
+                return self.write_json({'errno':1,'msg':'卡片不存在'})
         elif '1' == _type:
             try:
                 up = UserProfile.objects.get(username=request.user)
@@ -1648,7 +1636,7 @@ class Copy_File(BaseHandler):
                         card = Card.objects.get(id=keys)
                         _card = Card.objects.filter(pid=package_dir.id,file_name=card.file_name)
                         if _card:
-                           return self.write_json({'errno':'1','msg':'文件已存在！！！'})
+                           return self.write_json({'errno':'1','msg':'文件已存在'})
                         cp_card = Card()
                         cp_card.package_id = package_dir.id
                         cp_card.branch = package_dir.branch
@@ -1672,10 +1660,10 @@ class Copy_File(BaseHandler):
                             card_dir = Card.objects.get(id=copy_to_key)
                             c = Card.objects.get(id=keys)
                         except Card.DoesNotExist:
-                            return self.write_json({'errno':'1','msg':'文件不存在！！！'})
+                            return self.write_json({'errno':'1','msg':'文件不存在'})
                         _card = Card.objects.filter(pid=card_dir.id,file_name=c.file_name)
                         if _card:
-                            return self.write_json({'errno':'1','msg':'文件已存在！！！'})
+                            return self.write_json({'errno':'1','msg':'文件已存在'})
                         cp_card = Card()
                         cp_card.package_id = card_dir.package_id
                         cp_card.branch = card_dir.branch
@@ -1693,9 +1681,9 @@ class Copy_File(BaseHandler):
                         c.delete()
                 return get_file_dir(self,role,up)
             except Card.DoesNotExist:
-                return self.write_json({'errno':1,'msg':'卡片不存在！！！'})
+                return self.write_json({'errno':1,'msg':'卡片不存在'})
 
-
+#教学中心-文件重命名
 class Rename_File(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1709,7 +1697,7 @@ class Rename_File(BaseHandler):
             card = Card.objects.get(id=msg.get('key'))
             c = Card.objects.filter(~Q(file_name=card.file_name),package_id=card.package_id,file_name=file_name)
             if c:
-                return self.write_json({'errno':1,'msg':'文件已存在！！！'})
+                return self.write_json({'errno':1,'msg':'文件已存在'})
             if 0 == card.c_type:
                 new_name = file_name
                 result = git_utils.rename_file('0',card.package_location,card.branch,card.card_location,'',card.file_name,new_name)
@@ -1728,17 +1716,17 @@ class Rename_File(BaseHandler):
                 if  0 == card.tags:
                     c = Card.objects.filter(~Q(file_name=card.file_name),pid=folder_dir.id,file_name=file_name +'.md')
                     if c:
-                        return self.write_json({'errno':1,'msg':'文件已存在！！！'})
+                        return self.write_json({'errno':1,'msg':'文件已存在'})
                     new_name = file_name +'.md'
                 elif 1 == card.tags:
                     c = Card.objects.filter(~Q(file_name=card.file_name),pid=folder_dir.id,file_name=file_name +'.video')
                     if c:
-                        return self.write_json({'errno':1,'msg':'文件已存在！！！'})
+                        return self.write_json({'errno':1,'msg':'文件已存在'})
                     new_name = file_name +'.video'
                 elif 2 == card.tags:
                     c = Card.objects.filter(~Q(file_name=card.file_name),pid=folder_dir.id,file_name=file_name +'.exam')
                     if c:
-                        return self.write_json({'errno':1,'msg':'文件已存在！！！'})
+                        return self.write_json({'errno':1,'msg':'文件已存在'})
                     new_name = file_name +'.exam'
                 result = git_utils.rename_file('1',card.package_location,card.branch,card.card_location,
                                                 folder_dir.card_location,card.file_name,new_name)
@@ -1753,18 +1741,18 @@ class Rename_File(BaseHandler):
                 if  0 == card.tags:
                     c = Card.objects.filter(~Q(file_name=card.file_name),pid=folder_dir.id,file_name=file_name +'.md')
                     if c:
-                        return self.write_json({'errno':1,'msg':'文件已存在！！！'})
+                        return self.write_json({'errno':1,'msg':'文件已存在'})
                     new_name = file_name +'.md'
                 elif 1 == card.tags:
                     c = Card.objects.filter(~Q(file_name=card.file_name),pid=folder_dir.id,file_name=file_name +'.video')
                     if c:
-                        return self.write_json({'errno':1,'msg':'文件已存在！！！'})
+                        return self.write_json({'errno':1,'msg':'文件已存在'})
 
                     new_name = file_name +'.video'
                 elif 2 == card.tags:
                     c = Card.objects.filter(~Q(file_name=card.file_name),pid=folder_dir.id,file_name=file_name +'.exam')
                     if c:
-                        return self.write_json({'errno':1,'msg':'文件已存在！！！'})
+                        return self.write_json({'errno':1,'msg':'文件已存在'})
                     new_name = file_name +'.exam'
 
             result = git_utils.rename_file('1',card.package_location,card.branch,card.card_location,
@@ -1774,7 +1762,7 @@ class Rename_File(BaseHandler):
             card.save()
             return get_file_path(self,role,up)
 
-
+#教学中心-卡包重命名
 class Rename_Package(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1798,11 +1786,8 @@ class Rename_Package(BaseHandler):
             result = r.json()
             """
 
-            #if '0' == result.get('errno'):
             package.package_name = msg.get('package_name')
-            #package.package_location = result['data'].get('repo')
             package.save()
-            #FIXME: DOUBLECHECK
             """
                 _dir = Card.objects.filter(pid=package.id)
                 for dirs in _dir:
@@ -1829,7 +1814,7 @@ class Rename_Package(BaseHandler):
         except UserProfile.DoesNotExist:
             return self.write_json({'errno':1,'msg':'用户不存在'})
 
-
+#教学中心-查看卡片
 class Get_File(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1948,9 +1933,9 @@ class Get_File(BaseHandler):
                         card.save()
             return self.write_json({'errno': 0, 'msg': 'success','data':data})
         except Card.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在文件!!!'})
+            return self.write_json({'errno': 1, 'msg': '不存在文件'})
 
-
+#学习中心-讨论卡片详情
 class Discuss_File_Detail(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -1976,36 +1961,36 @@ class Discuss_File_Detail(BaseHandler):
                 else :
                     is_my_comment = 0
                 comment.append({
-                'id':mc.id,
-                'is_my_comment':is_my_comment,
-                'user':mc.user.username,
-                'head_img':mc.user.head_img,
-                'content':mc.content,
-                'create_time':str(mc.create_time)[:19]
+                    'id':mc.id,
+                    'is_my_comment':is_my_comment,
+                    'user':mc.user.username,
+                    'head_img':mc.user.head_img,
+                    'content':mc.content,
+                    'create_time':str(mc.create_time)[:19]
                 })
             p = Paginator(comment,count)
             if up == card.create_user:
                 is_my = 1
             data = {
-            'key':card.id,
-            'title':card.file_name,
-            'status':card.status,
-            'is_my':is_my,
-            'user':card.create_user.username,
-            'head_img':card.create_user.head_img,
-            'content':cont,
-            'total_count':msg_card.count(),
-            'total_page':p.num_pages,
-            'create_time':str(card.create_time)[:19],
-            'comment':p.page(page).object_list
+                'key':card.id,
+                'title':card.file_name,
+                'status':card.status,
+                'is_my':is_my,
+                'user':card.create_user.username,
+                'head_img':card.create_user.head_img,
+                'content':cont,
+                'total_count':msg_card.count(),
+                'total_page':p.num_pages,
+                'create_time':str(card.create_time)[:19],
+                'comment':p.page(page).object_list
             }
             return self.write_json({'errno': 0, 'msg': 'success','data':data})
         except Card.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在卡片!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在卡片'})
         except Card_Comment.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在评论信息!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在评论信息'})
 
-
+#学习中心-关闭讨论
 class Colse_Discuss(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -2023,23 +2008,22 @@ class Colse_Discuss(BaseHandler):
                 result = git_utils.get_file_content(others.package_location,'master',others.card_location)
                 content = result['data'].get('content')
                 other_disc.append({
-                'key':others.id,
-                'title':others.file_name,
-                'content':content,
-                'status':others.status,
-                'user':others.create_user.username,
-                'head_img':others.create_user.head_img,
-                'create_time':str(others.create_time)[19:]
+                    'key':others.id,
+                    'title':others.file_name,
+                    'content':content,
+                    'status':others.status,
+                    'user':others.create_user.username,
+                    'head_img':others.create_user.head_img,
+                    'create_time':str(others.create_time)[19:]
                 })
             data = {'all_disc':other_disc}
             return self.write_json({'errno': 0, 'msg': 'success','data':data})
         except Master_Package.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在卡包！！！'})
+            return self.write_json({'errno': 1, 'msg': '不存在卡包'})
         except Card.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在卡片！！！'})
+            return self.write_json({'errno': 1, 'msg': '不存在卡片'})
 
-
-
+#学习中心-删除卡片评论
 class Delete_Card_Comment(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -2074,11 +2058,11 @@ class Delete_Card_Comment(BaseHandler):
             return self.write_json({'errno': 0, 'msg': 'success','total_count':msg_card.count(),
                                      'total_page':pages.num_pages, 'data':pages.page(page).object_list})
         except Card.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在卡片！！！'})
+            return self.write_json({'errno': 1, 'msg': '不存在卡片'})
         except Card_Comment.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在评论！！！'})
+            return self.write_json({'errno': 1, 'msg': '不存在评论'})
 
-
+#学习中心-卡片评论
 class Card_Comments(BaseHandler):
     @logger_decorator
     @transaction.atomic
@@ -2149,12 +2133,11 @@ class Card_Comments(BaseHandler):
                                      'total_page':p.num_pages, 'data':p.page(page).object_list})
 
         except Card.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在文件!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在文件'})
         except User_Hw_Record.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在提交记录!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在提交记录'})
 
-
-
+#学习中心-卡片评论详情
 class Comment_Detail(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -2184,9 +2167,9 @@ class Comment_Detail(BaseHandler):
             return self.write_json({'errno': 0, 'msg': 'success','data':p.page(page).object_list,
                                     'total_count':card.count(),'total_page':p.num_pages})
         except Card.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在文件!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在文件'})
 
-
+#学习中心-卡片收藏
 class Card_Collect(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -2209,13 +2192,13 @@ class Card_Collect(BaseHandler):
 
             return self.write_json({'errno': 0, 'msg': 'success'})
         except Card.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在文件!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在文件'})
         except Card_Action.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在收藏信息!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在收藏信息'})
         except Course.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在课程!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在课程'})
 
-
+#学习中心-取消卡片收藏
 class Cancel_Collect(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -2231,9 +2214,9 @@ class Cancel_Collect(BaseHandler):
                 c.delete()
             return self.write_json({'errno': 0, 'msg': 'success'})
         except Card.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在文件!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在文件'})
 
-
+#学习中心-我收藏的卡片
 class My_Collect(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -2266,7 +2249,6 @@ class My_Collect(BaseHandler):
                 p = Paginator(data,count)
                 return self.write_json({'errno': 0, 'msg': 'success','total_page':p.num_pages,
                                         'total_count':card.count(),'data': p.page(page).object_list})
-
             for cards in card:
                 data.append({
                     'key':cards.card.id,
@@ -2280,16 +2262,15 @@ class My_Collect(BaseHandler):
             return self.write_json({'errno': 0, 'msg': 'success','total_page':p.num_pages,
                                     'total_count':card.count(),'data': p.page(page).object_list})
         except UserProfile.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在用户!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在用户'})
         except Card_Action.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在卡片收藏信息!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在卡片收藏信息'})
         except Course.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存课程信息!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存课程信息'})
         except Master_Package.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在卡包!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在卡包'})
 
-
-
+#学习中心-获取其他同学作业答案
 class Get_User_Answer(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -2349,9 +2330,9 @@ class Get_User_Answer(BaseHandler):
                 })
             return self.write_json({'errno': 0, 'msg': 'success','data':data})
         except Card.DoesNotExist:
-             return self.write_json({'errno': 1, 'msg': '不存在文件!!!'})
+             return self.write_json({'errno': 1, 'msg': '不存在文件'})
 
-
+#学习中心-我的学习记录
 class My_Study_Record(BaseHandler):
      @auth_decorator
      @logger_decorator
@@ -2374,9 +2355,6 @@ class My_Study_Record(BaseHandler):
                 study_record.save()
             all_card = Card.objects.filter(~Q(tags=3),~Q(tags=4),package_id=card.package_id,c_type=1).count()
             study_card = User_Study_Record.objects.filter(user=up,package=master_package).count()
-            print('******')
-            print(all_card)
-            print(study_card)
             if all_card == study_card:
                 msg = User_Course_Record.objects.filter(user=up,course=master_package.course)
                 if not msg:
@@ -2393,13 +2371,13 @@ class My_Study_Record(BaseHandler):
              }
             return self.write_json({'errno': 0,'msg':'success','data':datas})
         except Card.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在卡片!!!'})
+            return self.write_json({'errno': 1, 'msg': '不存在卡片'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在用户!!!'})
+            return self.write_json({'errno': 1, 'msg': '不存在用户'})
         except User_Study_Record.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在用户学习记录!!!'})
+            return self.write_json({'errno': 1, 'msg': '不存在用户学习记录'})
 
-
+#教学中心-创建卡包
 class Create_Package(BaseHandler):
     @auth_decorator
     @logger_decorator
@@ -2411,7 +2389,7 @@ class Create_Package(BaseHandler):
         try:
             package = Master_Package.objects.filter(package_name=package_name,create_user=up)
             if package:
-                return self.write_json({'errno':1,'msg':'该卡包名称已被占用!!!'})
+                return self.write_json({'errno':1,'msg':'该卡包名称已被占用'})
             packages = Master_Package()
             packages.package_name = package_name.strip()
             packages.create_user = up
@@ -2426,11 +2404,11 @@ class Create_Package(BaseHandler):
                 packages.save()
                 return get_file_path_as_card(self,up)
             else :
-                return self.write_json({'errno':1,'msg':'创建卡包失败!!!'})
+                return self.write_json({'errno':1,'msg':'创建卡包失败'})
         except ValueError:
-            return self.write_json({'errno':1,'msg':'卡包已存在!!!'})
+            return self.write_json({'errno':1,'msg':'卡包已存在'})
 
-
+#教学中心-删除卡包
 class Delete_Package(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -2445,8 +2423,6 @@ class Delete_Package(BaseHandler):
                 assi.delete()
             all_card = Card.objects.filter(package_location=package.package_location)
             all_card.delete()
-
-            #FIXME: bug second param
             result =git_utils.delete_package(package.package_location)
             package.delete()
             return get_file_path_as_card(self,up)
@@ -2455,16 +2431,13 @@ class Delete_Package(BaseHandler):
                 package = Branch_Package.objects.get(id=msg.get('key'))
                 all_card = Card.objects.filter(package_id=package.id,package_location=package.package_location)
                 all_card.delete()
-
-                #FIXME
                 result = git_utils.delete_branch(package.package_location,'master',package.branch)
                 package.delete()
-
                 return assi_path(self,package.id)
             except Branch_Package.DoesNotExist:
                 return self.write_json({'errno':1,'msg':'卡包不存在'})
 
-
+#学习中心-课程目录
 class Course_Dir(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -2477,8 +2450,7 @@ class Course_Dir(BaseHandler):
             course = Course.objects.get(id=course_id)
             num = User_Buy_Record.objects.filter(course=course).count()
         except Course.DoesNotExist:
-            return self.write_json({'errno':1, 'msg': '课程不存在!!!'})
-
+            return self.write_json({'errno':1, 'msg': '课程不存在'})
         c_package = Master_Package.objects.filter(course=course,p_type=0)
         c_data = []
         sign = ''
@@ -2486,28 +2458,28 @@ class Course_Dir(BaseHandler):
             if not None  == c_packages.sign:
                 sign = c_packages.sign
             c_data.append({
-                    'file':c_packages.package_name,
-                    'coll_count':0,
-                    'type':0,
-                    'id':c_packages.id,
-                    'index':-1,
-                    'pid':0,
-                    'is_study':0,
-                    'is_finish':0
+                'file':c_packages.package_name,
+                'coll_count':0,
+                'type':0,
+                'id':c_packages.id,
+                'index':-1,
+                'pid':0,
+                'is_study':0,
+                'is_finish':0
                 })
             c_card = Card.objects.filter(~Q(tags=4),package_id=c_packages.id)
             coll_count = 0
             for c_cards in c_card:
                 coll_count = Card_Action.objects.filter(card=c_cards).count()
                 c_da={
-                'coll_count':coll_count,
-                'file':c_cards.file_name,
-                'id':c_cards.id,
-                'type':c_cards.c_type,
-                'pid':c_cards.pid,
-                'index':c_cards.index,
-                'is_study':User_Study_Record.objects.filter(card_id=c_cards.id,user=up).count(),
-                'is_finish':User_Hw_Record.objects.filter(card_id=c_cards.id,user=up).count()
+                    'coll_count':coll_count,
+                    'file':c_cards.file_name,
+                    'id':c_cards.id,
+                    'type':c_cards.c_type,
+                    'pid':c_cards.pid,
+                    'index':c_cards.index,
+                    'is_study':User_Study_Record.objects.filter(card_id=c_cards.id,user=up).count(),
+                    'is_finish':User_Hw_Record.objects.filter(card_id=c_cards.id,user=up).count()
                 }
                 c_data.append(c_da)
 
@@ -2547,7 +2519,7 @@ class Course_Dir(BaseHandler):
             }
         return self.write_json({'errno':0, 'msg': 'success','data':message})
 
-
+#学习中心-提交作业答案
 class Commit_Hw(BaseHandler):
         @logger_decorator
         @transaction.atomic
@@ -2578,15 +2550,7 @@ class Commit_Hw(BaseHandler):
                     aw_card.pid = pa.id
                     path = os.path.join(pa.card_location,up.id+'.aw')
                     aw_card.card_location = path
-                    data = {
-                        'branch':'master',
-                        'repo':pa.package_location,
-                        'dir_name':path,
-                        'file_content':msg.get('content')
-                    }
-                    url = settings.GIT_FILE_URL
-                    r = requests.post(url,data=data)
-                    result = r.json()
+                    result = git_utils.create_file(pa.package_location,'master',path,msg.get('content'))
                     if '0' == result.get('errno'):
                         aw_card.save()
                         _file.commit_count += 1
@@ -2618,13 +2582,13 @@ class Commit_Hw(BaseHandler):
                     })
                 return self.write_json({'errno':0, 'msg': 'success','data':aw_detail})
             except Card.DoesNotExist:
-                return self.write_json({'errno':1, 'msg': '不存在卡片信息！！！'})
+                return self.write_json({'errno':1, 'msg': '不存在卡片信息'})
             except UserProfile.DoesNotExist:
-                return self.write_json({'errno':1, 'msg': '不存在用户！！！'})
+                return self.write_json({'errno':1, 'msg': '不存在用户'})
             except Master_Package.DoesNotExist:
-                return self.write_json({'errno':1, 'msg': '不存在卡包！！！'})
+                return self.write_json({'errno':1, 'msg': '不存在卡包'})
 
-
+#学习中心-编辑作业答案
 class Modify_Hw(BaseHandler):
     @logger_decorator
     @transaction.atomic
@@ -2637,15 +2601,7 @@ class Modify_Hw(BaseHandler):
             aw_card = Card.objects.get(id=msg.get('key'))
             hw_card = User_Hw_Record.objects.filter(aw_card=aw_card,user=up,package_id=aw_card.package_id)
             aw_card.content = msg.get('content')
-            data = {
-                'branch':'master',
-                'repo':aw_card.package_location,
-                'dir_name':aw_card.card_location,
-                'file_content':msg.get('content')
-                }
-            url = settings.GIT_MODIFY_FILE
-            r = requests.post(url,data=data)
-            result = r.json()
+            result = git_utils.modify_file('0',aw_card.package_location,'master',aw_card.card_location,msg.get('content'))
             my = {}
             for hw in hw_card:
                 hw.answer = msg.get('content')
@@ -2657,7 +2613,6 @@ class Modify_Hw(BaseHandler):
                     'head_img':up.head_img,
                     'create_time':str(hw.create_time)[19:]
                  }
-          #  if '0' == result.get('errno'):
             aw_card.save()
             aw_detail = []
             comment = []
@@ -2670,7 +2625,6 @@ class Modify_Hw(BaseHandler):
                     'content':coms.content,
                     'create_time':str(coms.create_time)[19:]
                     })
-
             aw_detail.append({
                 'key':aw_card.id,
                 'content':file_content(self,file_card.id,up),
@@ -2680,11 +2634,11 @@ class Modify_Hw(BaseHandler):
                 })
             return self.write_json({'errno':0, 'msg': 'success','data':aw_detail})
         except Package.DoesNotExist:
-            return self.write_json({'errno':1, 'msg': '不存在卡包！！！'})
+            return self.write_json({'errno':1, 'msg': '不存在卡包'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1, 'msg': '不存在用户！！！'})
+            return self.write_json({'errno':1, 'msg': '不存在用户'})
 
-
+#教学中心-文件、分支对比
 class File_Diff(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -2695,16 +2649,7 @@ class File_Diff(BaseHandler):
             logger.info("File_Diff: %s %s" % (msg.get('type'),msg.get('key')))
             if settings.GIT_DIFF_FILE == msg.get('type'):
                 c = Card.objects.get(id=msg.get('key'))
-                data = {
-                    'type':'0',
-                    'branch':'master',
-                    'assi_branch':c.branch,
-                    'repo':c.package_location,
-                    'file_path':c.card_location,
-                    }
-                url = settings.GIT_DIFF
-                r = requests.post(url,data=data)
-                result = r.json()
+                result = git_utils.file_diff('','0',c.package_location,'master',c.branch,c.card_location)
                 if '0' == result.get('errno'):
                     s = result.get('data')
                     return self.write_json({'errno':0, 'msg': 'success','data':s})
@@ -2725,18 +2670,7 @@ class File_Diff(BaseHandler):
                         'content':mess.content,
                         'create_time':str(mess.create_time)[19:]
                         }
-                data = {
-                    'role':msg.get('role'),
-                    'type':settings.GIT_DIFF_BRANCH,
-                    'branch':'master',
-                    'assi_branch':p.branch,
-                    'repo':p.package_location,
-                    }
-
-                url = settings.GIT_DIFF
-                r = requests.post(url,data=data)
-                result = r.json()
-
+                result = git_utils.file_diff(msg.get('role'),'1',p.package_location,'master',p.branch)
                 if '0' == result.get('errno'):
                     s = result.get('data')
                     ss = s[0] if type(s)==list else s
@@ -2746,48 +2680,31 @@ class File_Diff(BaseHandler):
                 if 0 == card.c_type:
                     cards = Card.objects.filter(pid=card.id)
                     for c in cards:
-                        data = {
-                            'type':'2',
-                            'repo':c.package_location,
-                            'branch':c.branch,
-                            'file_path':c.card_location,
-                        }
-                        url = settings.GIT_DIFF
-                        r = requests.post(url,data=data)
-                        result = r.json()
+                        result = git_utils.file_diff('','2',c.package_location,c.branch,'',c.card_location)
                         if '0' == result.get('errno'):
                             s = result.get('data')
                             return self.write_json({'errno':0, 'msg': 'success','data':s})
                         else:
-                            return self.write_json({'errno':1, 'msg': '新创建文件无法还原！！！'})
-
+                            return self.write_json({'errno':1, 'msg': '新创建文件无法还原'})
                 elif 1 == card.c_type:
-                    data = {
-                        'type':'2',
-                        'repo':card.package_location,
-                        'branch':card.branch,
-                        'file_path':card.card_location
-                    }
-                    url = settings.GIT_DIFF
-                    r = requests.post(url,data=data)
-                    result = r.json()
+                    result = git_utils.file_diff('','2',card.package_location,card.branch,'',card.card_location)
                     if '0' == result.get('errno'):
                         s = result.get('data')
                         return self.write_json({'errno':0, 'msg': 'success','data':s})
                     else:
-                        return self.write_json({'errno':1, 'msg': '新创建文件无法还原！！！'})
+                        return self.write_json({'errno':1, 'msg': '新创建文件无法还原'})
 
-            return self.write_json({'errno':1, 'msg': '文件冲突未解决！！！','data':''})
+            return self.write_json({'errno':1, 'msg': '文件冲突未解决','data':''})
         except Branch_Package.DoesNotExist:
-            return self.write_json({'errno':1, 'msg': '已合并文件！！！'})
+            return self.write_json({'errno':1, 'msg': '已合并文件'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1, 'msg': '不存在用户！！！'})
+            return self.write_json({'errno':1, 'msg': '不存在用户'})
         except User_Branch.DoesNotExist:
-            return self.write_json({'errno':1, 'msg': '不存在分支信息！！！'})
+            return self.write_json({'errno':1, 'msg': '不存在分支信息'})
         except Card.DoesNotExist:
             return self.write_json({'errno':1, 'msg': '卡片不存在'})
 
-
+#教学中心-我创建的卡包
 class Teacher_Package(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -2796,7 +2713,7 @@ class Teacher_Package(BaseHandler):
         path = get_file_path_as_card(self, up, False)
         return self.write_json(path)
 
-
+#教学中心-master合并branch
 class Merge_Branch(BaseHandler):
     @logger_decorator
     @transaction.atomic
@@ -2893,16 +2810,7 @@ class Merge_Branch(BaseHandler):
 
             #FIXME
             # git合并
-            data = {
-                'type':'0',
-                'branch':create_pack.branch,
-                'merge_branch':assi_pack.branch,
-                'repo':create_pack.package_location
-                }
-            url = settings.GIT_MERGE_BRANCH
-            r = requests.post(url,data=data)
-            result = r.json()
-
+            result = git_utils.merge_branch('0',create_pack.package_location,create_pack.branch,assi_pack.branch)
             all_card = Card.objects.filter(package_id=assi_pack.id)
             for ac in all_card:
                 ac.delete()
@@ -2945,7 +2853,7 @@ class Merge_Branch(BaseHandler):
             return self.write_json({'errno':1,'msg':'卡包不存在'})
 
 
-#FIXME
+#教学中心-branch合并master
 class Merge_Master(BaseHandler):
     @logger_decorator
     @transaction.atomic
@@ -2985,16 +2893,6 @@ class Merge_Master(BaseHandler):
                 copy_master.package_location = create_pack.package_location
                 copy_master.role = 0
                 copy_master.save()
-                #b = User_Branch.objects.filter(user=assi_pack.create_user,create_package=copy_master,
-                #                                assi_package=assi_pack)
-                #if not b:
-            #    user_branch = User_Branch()
-            #    user_branch.user = assi_pack.create_user
-            #    user_branch.create_package = copy_master
-            #    user_branch.assi_package = assi_pack
-            #    user_branch.branch = assi_pack.create_user.phone
-            #    user_branch.save()
-            #    #
                 copy_master_file(value,copy_master.id,copy_master)
                 delete_data = []
                 master_card = Card.objects.filter(package_id=copy_master.id)
@@ -3030,22 +2928,13 @@ class Merge_Master(BaseHandler):
 
                 all_card = Card.objects.filter(package_id=copy_master.id)
                 for ac in all_card:
-                    print(ac.file_name)
                     ac.delete()
                 copy_master.delete()
 
             # merge master start
             master_package_path = assi_path(self,create_pack.id,False)
             copy_data = copy_master_package(master_package_path.get('data')[0])
-            data = {
-                'type':'1',
-                'branch':create_pack.branch,
-                'merge_branch':assi_pack.branch,
-                'repo':create_pack.package_location
-                }
-            url = settings.GIT_MERGE_BRANCH
-            r = requests.post(url,data=data)
-            result = r.json()
+            result = git_utils.merge_branch('1',create_pack.package_location,create_pack.branch,assi_pack.branch)
             if '0' == result.get('errno'):
                 path = get_assi_file_path_as_card(self,up,False);
                 return self.write_json(path)
@@ -3064,16 +2953,15 @@ class Merge_Master(BaseHandler):
                                 'title':cs.file_name,
                                 'content':cc.get('content'),
                             })
-                    return self.write_json({'errno':1,'msg':'合并文件有冲突！！！','data':data})
+                    return self.write_json({'errno':1,'msg':'合并文件有冲突','data':data})
                 else:
-                    return self.write_json({'errno':1,'msg':'合并文件有冲突,请联系卡包创建者！！！'})
+                    return self.write_json({'errno':1,'msg':'合并文件有冲突,请联系卡包创建者'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'卡包不存在！！！'})
+            return self.write_json({'errno':1,'msg':'卡包不存在'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'卡包不存在！！！'})
+            return self.write_json({'errno':1,'msg':'卡包不存在'})
 
-
-
+#教学中心-文件还原
 class Recover_File(BaseHandler):
     @logger_decorator
     @auth_decorator
@@ -3083,19 +2971,12 @@ class Recover_File(BaseHandler):
         try:
            c = Card.objects.get(id=msg.get('key'))
         except Card.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'卡片不存在！！！'})
+            return self.write_json({'errno':1,'msg':'卡片不存在'})
         if 1 == c.c_type:
             c.reset_count += 1
             c.save()
-            data = {
-                'branch':c.branch,
-                'repo':c.package_location,
-                'path':c.card_location,
-                'count':c.modify_count - c.reset_count
-            }
-            url = settings.GIT_RECOVER_FILE
-            r = requests.post(url,data=data)
-            result = r.json()
+            count = c.modify_count - c.reset_count
+            result = git_utils.recover_file(c.package_location,c.branch,c.card_location,count)
             if '0' ==  result.get('errno'):
                 c.content = result.get('content')
                 c.save()
@@ -3105,23 +2986,15 @@ class Recover_File(BaseHandler):
             for cs in cards:
                 cs.reset_count += 1
                 cs.save()
-                data = {
-                    'branch':cs.branch,
-                    'repo':cs.package_location,
-                    'path':cs.card_location,
-                    'count':cs.modify_count - cs.reset_count
-                }
-                url = settings.GIT_RECOVER_FILE
-                r = requests.post(url,data=data)
-                result = r.json()
-                print(result)
+                count = cs.modify_count - cs.reset_count
+                result = git_utils.recover_file(cs.package_location,cs.branch,cs.card_location,count)
                 if '0' ==  result.get('errno'):
                     cs.content = result.get('content')
                     cs.save()
                 return self.write_json({'errno':0,'msg':'ok'})
 
 
-
+#上传图片返回七牛token
 class Qiniu_Token(BaseHandler):
     def post(self,request):
         img = Uploader()
@@ -3145,7 +3018,7 @@ class Delete_Some_File(BaseHandler):
             cs.delete()
         return self.write_json({'errno':0,'msg':'ok'})
 
-
+#教学中心-提交变更申请
 class Apply_Merge_Branch(BaseHandler):
     @transaction.atomic
     @logger_decorator
@@ -3174,13 +3047,13 @@ class Apply_Merge_Branch(BaseHandler):
             results = r.json()
             return self.write_json({'errno':0,'msg':'ok'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'用户不存在！！！'})
+            return self.write_json({'errno':1,'msg':'用户不存在'})
         except Branch_Package.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在卡包！！！'})
+            return self.write_json({'errno':1,'msg':'不存在卡包'})
         except User_Branch.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在分支信息！！！'})
+            return self.write_json({'errno':1,'msg':'不存在分支信息'})
 
-
+#个人中心-点击查看消息
 class Check_Message(BaseHandler):
     @transaction.atomic
     @logger_decorator
@@ -3205,13 +3078,13 @@ class Check_Message(BaseHandler):
                 content = ''
             return self.write_json({'errno':0,'msg':'ok','data':content})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'用户不存在！！！'})
+            return self.write_json({'errno':1,'msg':'用户不存在'})
         except User_Branch.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在分支信息！！！'})
+            return self.write_json({'errno':1,'msg':'不存在分支信息'})
         except Card.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在卡片信息！！！'})
+            return self.write_json({'errno':1,'msg':'不存在卡片信息'})
 
-
+#个人中心-拒绝合并变更
 class Refuse_Merge_Branch(BaseHandler):
     @transaction.atomic
     @logger_decorator
@@ -3226,7 +3099,6 @@ class Refuse_Merge_Branch(BaseHandler):
             mess = System_Message.objects.get(id=msg.get('messageid'))
             mess.apply_status = 2
             mess.save()
-
             message = System_Message()
             message.user = up
             message.message = up.username + '拒绝了你对' + assi_package.package_name + '的变更申请'
@@ -3238,13 +3110,13 @@ class Refuse_Merge_Branch(BaseHandler):
             message.save()
             return self.write_json({'errno':0,'msg':'ok'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'用户不存在！！！'})
+            return self.write_json({'errno':1,'msg':'用户不存在'})
         except Package.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在卡包！！！'})
+            return self.write_json({'errno':1,'msg':'不存在卡包'})
         except User_Branch.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'不存在分支信息！！！'})
+            return self.write_json({'errno':1,'msg':'不存在分支信息'})
 
-
+#个人中心-我的消息
 class My_Message(BaseHandler):
     @transaction.atomic
     @auth_decorator
@@ -3290,15 +3162,7 @@ class My_Message(BaseHandler):
                     assi_pack = Branch_Package.objects.get(id=m.key)
                     u_branch = User_Branch.objects.get(user=user,assi_package=assi_pack)
                     create_pack = u_branch.create_package
-                    da = {
-                        'type':'0',
-                        'branch':create_pack.branch,
-                        'merge_branch':assi_pack.branch,
-                        'repo':create_pack.package_location
-                        }
-                    url = settings.GIT_MERGE_BRANCH
-                    r = requests.post(url,data=da)
-                    result = r.json()
+                    result = git_utils.merge_branch('0',create_pack.package_location,create_pack.branch,assi_pack.branch)
                     if '0' == result.get('errno'):
                         return self.write_json({'errno':0,'msg':'success','data':''})
                     else:
@@ -3345,9 +3209,9 @@ class My_Message(BaseHandler):
                                     'comment_count': System_Message.objects.filter(to_user=up,type=2,status=0).count(),
                                     'total_page':p.num_pages,'data': p.page(page).object_list})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'用户不存在！！！'})
+            return self.write_json({'errno':1,'msg':'用户不存在'})
 
-
+#教学中心-上传压缩包
 class Upload_Zip(BaseHandler):
     @transaction.atomic
     @logger_decorator
@@ -3376,6 +3240,18 @@ class Upload_Zip(BaseHandler):
             p = get_package(self,request.POST.get('key'))
             unuse = []
             if p:
+                package_id = p.id
+                package_location = p.package_location
+                branch = p.branch
+            else:
+                try:
+                    folder = Card.objects.get(id=request.POST.get('key'))
+                    package_id = folder.package_id
+                    package_location = folder.package_location
+                    branch = folder.branch
+                except Card.DoesNotExist:
+                    return self.write_json({'errno':1,'msg':'文件不存在'})
+
                 for f in file_field:
                     if zipfile.is_zipfile(f):
                         zfobj = zipfile.ZipFile(f)
@@ -3388,7 +3264,7 @@ class Upload_Zip(BaseHandler):
                                         os.makedirs(dn)
                                     base_dir = os.path.dirname(filename)
                                     jk = get_parent_path(filename[7:])
-                                    p_path = os.path.join(p.package_location,jk)
+                                    p_path = os.path.join(package_location,jk)
                                     pid = Card.objects.filter(card_location=p_path)
                                     fid = p.id
                                     for ps in pid:
@@ -3396,24 +3272,17 @@ class Upload_Zip(BaseHandler):
                                     if os.path.isdir(filename):
                                         c = Card.objects.filter(file_name=folder_name(filename[7:]),pid=fid)
                                         if not c:
-                                            path = os.path.join(p.package_location,filename[7:])
+                                            path = os.path.join(package_location,filename[7:])
                                             card = Card()
-                                            card.package_id = p.id
-                                            card.branch = p.branch
-                                            card.package_location = p.package_location
+                                            card.package_id = package_id
+                                            card.branch = branch
+                                            card.package_location = package_location
                                             card.file_name = folder_name(filename[7:])
                                             card.c_type = 0
                                             card.pid = fid
                                             card.create_user = up
                                             card.card_location = path[:-1]
-                                            data = {
-                                                'branch':p.branch,
-                                                'repo':p.package_location,
-                                                'dir_name':path[:-1]
-                                            }
-                                            url = settings.GIT_DIRPATH
-                                            r = requests.post(url,data=data)
-                                            result = r.json()
+                                            result = git_utils.create_dir(package_location,branch,path[:-1])
                                             card.save()
                                     else:
                                         outfile = open(filename,'wb')
@@ -3429,14 +3298,14 @@ class Upload_Zip(BaseHandler):
                                         name, ext = os.path.splitext(fname)
                                         if ext not in ['.md', '.video', '.exam']:
                                             unuse.append({'file':filename[7:],'type':0})
-                                        fpath = os.path.join(p.package_location,filename[7:])
+                                        fpath = os.path.join(package_location,filename[7:])
                                         c = Card.objects.filter(file_name=fname,card_location=fpath)
                                         if not c:
                                             if  ext in ['.md', '.video', '.exam']:
                                                 card = Card()
-                                                card.package_id = p.id
-                                                card.branch = p.branch
-                                                card.package_location = p.package_location
+                                                card.package_id = package_id
+                                                card.branch = branch
+                                                card.package_location = package_location
                                                 card.file_name = fname
                                                 card.card_location = fpath
                                                 card.content = content
@@ -3459,15 +3328,7 @@ class Upload_Zip(BaseHandler):
                                                         unuse.append({'file':filename[7:],'type':1})
                                                 card.create_user = up
                                                 card.pid = fid
-                                                data = {
-                                                    'branch':p.branch,
-                                                    'repo': p.package_location,
-                                                    'dir_name': fpath,
-                                                    'file_content': content
-                                                }
-                                                url = settings.GIT_FILE_URL
-                                                r = requests.post(url,data=data)
-                                                result = r.json()
+                                                result = git_utils.create_file(package_location,branch,fpath,content)
                                                 verify = verify_content(self,content)
                                                 if 0 == verify.get('errno'):
                                                     card.save()
@@ -3481,111 +3342,4 @@ class Upload_Zip(BaseHandler):
             file_dir['error_file'] = unuse
             return self.write_json(file_dir)
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'用户不存在！！！'})
-        else:
-            try:
-                folder = Card.objects.get(id=request.POST.get('key'))
-            except Card.DoesNotExist:
-                return self.write_json({'errno':1,'msg':'文件不存在！！！'})
-            for f in file_field:
-                if zipfile.is_zipfile(f):
-                    zfobj = zipfile.ZipFile(f)
-                    for name in zfobj.namelist():
-                        if name:
-                            filename = os.path.join(dirname,name)
-                            if 'MACOSX' not in filename and 'Store' not in filename:
-                                dn = os.path.dirname(filename)
-                                if not os.path.exists(dn):
-                                    os.makedirs(dn)
-                                base_dir = os.path.dirname(filename)
-                                jk = get_parent_path(filename[7:])
-                                p_path = os.path.join(folder.card_location,jk)
-                                pid = Card.objects.filter(card_location=p_path)
-                                fid = folder.id
-                                for ps in pid:
-                                    fid = ps.id
-                                if os.path.isdir(filename):
-                                    c = Card.objects.filter(file_name=folder_name(filename[7:]),pid=fid)
-                                    if not c:
-                                        path = os.path.join(folder.card_location,filename[7:])
-                                        card = Card()
-                                        card.package_id = folder.package_id
-                                        card.branch = folder.branch
-                                        card.package_location = folder.package_location
-                                        card.file_name = folder_name(filename[7:])
-                                        card.c_type = 0
-                                        card.pid = fid
-                                        card.create_user = up
-                                        card.card_location = path[:-1]
-                                        data = {
-                                            'branch':folder.branch,
-                                            'repo':folder.package_location,
-                                            'dir_name':path[:-1],
-                                            }
-                                        url = settings.GIT_DIRPATH
-                                        r = requests.post(url,data=data)
-                                        result = r.json()
-                                        card.save()
-                                else:
-                                    outfile = open(filename,'wb')
-                                    outfile.write(zfobj.read(name))
-                                    outfile.close()
-                                    fs = open(filename,'r')
-                                    lines = fs.read()
-                                    content = ''
-                                    for line in lines:
-                                        content += line
-                                    jd = get_parent_path(filename)
-                                    fname = file_name(filename)
-                                    name, ext = os.path.splitext(fname)
-                                    if ext not in ['.md', '.video', '.exam']:
-                                        unuse.append({'file':filename[7:],'type':0})
-                                    fpath = os.path.join(folder.card_location,filename[7:])
-                                    c = Card.objects.filter(file_name=fname,card_location=fpath)
-                                    if not c:
-                                        if  ext in ['.md', '.video', '.exam']:
-                                            card = Card()
-                                            card.package_id = folder.package_id
-                                            card.file_name = fname
-                                            card.card_location = fpath
-                                            card.create_user = up
-                                            card.c_type = 1
-                                            card.content = content
-                                            if '.video' in fname:
-                                                card.tags = 1
-                                                verify = verify_content(self,content)
-                                                if 0 == verify.get('errno'):
-                                                    card.save()
-                                                    pass
-                                                else:
-                                                    unuse.append({'file':filename[7:],'type':1})
-                                            elif '.exam' in fname:
-                                                card.tags = 2
-                                                verify = verify_content(self,content)
-                                                if 0 == verify.get('errno'):
-                                                    card.save()
-                                                    pass
-                                                else:
-                                                    unuse.append({'file':filename[7:],'type':1})
-                                            card.pid = fid
-                                            data = {
-                                                'branch':folder.branch,
-                                                'repo':folder.package_location,
-                                                'dir_name':fpath,
-                                                'file_content':content
-                                                }
-                                            url = settings.GIT_FILE_URL
-                                            r = requests.post(url,data=data)
-                                            result = r.json()
-                                            verify = verify_content(self,content)
-                                            if 0 == verify.get('errno'):
-                                                card.save()
-                                                pass
-                                            else:
-                                                unuse.append({'file':filename[7:],'type':1})
-            if '0' == role:
-                file_dir = get_file_path_as_card(self, up, False)
-            elif '1' == role:
-                file_dir = get_assi_file_path_as_card(self, up, False)
-            file_dir['error_file'] = unuse
-            return self.write_json(file_dir)
+            return self.write_json({'errno':1,'msg':'用户不存在'})
