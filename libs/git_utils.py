@@ -11,7 +11,7 @@ def create_git_package(package_name):
     r = requests.post(url,data=data)
     return r.json()
 
-def delete_file(repo,branch,dir_name): 
+def delete_file(repo,branch,dir_name):
     data = {
       'repo':repo,
       'branch':branch,
@@ -21,7 +21,7 @@ def delete_file(repo,branch,dir_name):
     r = requests.post(url,data=data)
     return r.json()
 
-def delete_folder(repo,branch,dir_name): 
+def delete_folder(repo,branch,dir_name):
     data = {
       'repo':repo,
       'branch':branch,
@@ -31,7 +31,7 @@ def delete_folder(repo,branch,dir_name):
     r = requests.post(url,data=data)
     return r.json()
 
-def delete_package(repo): 
+def delete_package(repo):
     data = {
       'repo':repo,
       'branch':'master',
@@ -40,7 +40,7 @@ def delete_package(repo):
     r = requests.post(url,data=data)
     return r.json()
 
-def create_file(package_location,branch,path,content): 
+def create_file(package_location,branch,path,content):
     data = {
      'repo':package_location,
      'branch':branch,
@@ -51,7 +51,7 @@ def create_file(package_location,branch,path,content):
     r = requests.post(url,data = data)
     return r.json()
 
-def create_dir(package_location,branch,path): 
+def create_dir(package_location,branch,path):
     data = {
      'repo':package_location,
      'branch':branch,
@@ -62,7 +62,7 @@ def create_dir(package_location,branch,path):
     return r.json()
 
 
-def get_file_content(package_location,branch,path): 
+def get_file_content(package_location,branch,path):
     datas = {
         'repo':package_location,
         'branch':branch,
@@ -73,7 +73,7 @@ def get_file_content(package_location,branch,path):
     return r.json()
 
 
-def modify_file(value,package_location,branch,path,content): 
+def modify_file(value,package_location,branch,path,content):
     data = {
         'type':value,
         'repo':package_location,
@@ -85,7 +85,7 @@ def modify_file(value,package_location,branch,path,content):
     r = requests.post(url,data=data)
     return r.json()
 
-def modify_discuss_file(package_location,branch,path,new_name,content): 
+def modify_discuss_file(package_location,branch,path,new_name,content):
     data = {
         'repo':package_location,
         'branch':'master',
@@ -97,7 +97,7 @@ def modify_discuss_file(package_location,branch,path,new_name,content):
     r = requests.post(url,data=data)
     return r.json()
 
-def commit_file(value,package_location,branch,merge_branch): 
+def commit_file(value,package_location,branch,merge_branch):
     data = {
         'type':value,
         'repo':package_location,
@@ -108,7 +108,7 @@ def commit_file(value,package_location,branch,merge_branch):
     r = requests.post(url,data=data)
     return r.json()
 
-def copy_file(value,package_location,file_dir,branch,path): 
+def copy_file(value,package_location,file_dir,branch,path):
     data = {
         'type':value,
         'repo':package_location,
@@ -121,7 +121,7 @@ def copy_file(value,package_location,file_dir,branch,path):
     return r.json()
 
 
-def delete_branch(package_location,branch,del_branch): 
+def delete_branch(package_location,branch,del_branch):
     data = {
         'repo':package_location,
         'branch':branch,
@@ -132,7 +132,7 @@ def delete_branch(package_location,branch,del_branch):
     return r.json()
 
 
-def rename_file(value,package_location,branch,path,folder_dir,old_name,new_name): 
+def rename_file(value,package_location,branch,path,folder_dir,old_name,new_name):
     data = {
         '_type':value,
         'repo':package_location,
@@ -143,5 +143,50 @@ def rename_file(value,package_location,branch,path,folder_dir,old_name,new_name)
         'new_name':new_name,
         }
     url = settings.GIT_RENAME_FILE
+    r = requests.post(url,data=data)
+    return r.json()
+
+def file_diff(role,value,package_location,branch,assi_branch,path):
+     data = {
+         'role':role,
+         'type':value,
+         'repo':package_location,
+         'branch':branch,
+         'assi_branch':assi_branch,
+         'file_path':path
+         }
+     url = settings.GIT_DIFF
+     r = requests.post(url,data=data)
+     return r.json()
+
+def merge_branch(value,package_location,branch,assi_branch):
+
+    data = {
+        'type':value,
+        'repo':package_location,
+        'branch':branch,
+        'merge_branch':assi_branch,
+        }
+    url = settings.GIT_MERGE_BRANCH
+    r = requests.post(url,data=data)
+    return r.json()
+
+def recover_file(package_location,branch,path,count):
+    data = {
+        'repo':package_location,
+        'branch':branch,
+        'path':path,
+        'count':count
+        }
+    url = settings.GIT_RECOVER_FILE
+    r = requests.post(url,data=data)
+    return r.json()
+
+def checkout_master(package_location,branch):
+    data = {
+        'repo':package_location,
+        'branch':branch,
+        }
+    url = settings.GIT_CHECKOUT_MASTERH
     r = requests.post(url,data=data)
     return r.json()
