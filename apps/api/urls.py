@@ -84,5 +84,17 @@ urlpatterns +=[
 
 # 小程序API
 urlpatterns +=[
-    url('^xcx/authcode', xcx.AuthCode.as_view()),
+    url('^xcx/auth-code', xcx.AuthCode.as_view()),#获取验证码
+    url('^xcx/auth-phone', xcx.AuthPhone.as_view()),#根据验证码验证手机号
+    url('^xcx/set-password', xcx.SetPassword.as_view()),#设置密码
+    url('^xcx/courses-list', xcx.CoursesList.as_view()),#课程列表
+    url('^xcx/course-detail', xcx.CourseDetail.as_view()),#课程详情
+    url('^xcx/messages', xcx.Messages.as_view()),#消息中心
+    url('^xcx/my-colloections', xcx.MyCollections.as_view()),#我的收藏
+    url('^xcx/course-list', xcx.CourseList.as_view()),#课程列表目录
+    url('^xcx/card-detail', xcx.CardDetail.as_view()),#卡片详情
+    url('^xcx/collect-card', xcx.CollectCard.as_view()), #收藏卡片
+    url('^xcx/get-ordernum', xcx.GetOrderNum.as_view()), #获取购买课程订单号
+    url('^xcx/get-payinfo', xcx.GetPayInfo.as_view()), #获取付款信息
+    url('^xcx/get-payresult', xcx.GetPayResult.as_view()), #获取付款结果信息
 ]

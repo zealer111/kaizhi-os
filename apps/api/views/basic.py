@@ -28,7 +28,7 @@ class Login(BaseHandler):
         user = authenticate(request, username=phone, password=password)
         u = UserProfile.objects.filter(phone=phone)
         if not u:
-            return self.write_json({'errno':1,'msg':'手机号尚未注册！！!'})
+            return self.write_json({'errno':1,'msg':'手机号尚未注册'})
         if user:
             login(request, user)
             try:
@@ -36,7 +36,7 @@ class Login(BaseHandler):
             except UserProfile.DoesNotExist:
                 return self.write_json({'errno':1,'msg':'用户不存在!'})
         else:
-            return self.write_json({'errno':'1','msg':'密码错误，请重新输入！！！'})
+            return self.write_json({'errno':'1','msg':'密码错误，请重新输入'})
         data = {
             'token':generate_token(up.id),
             'userid':up.id,
@@ -72,10 +72,10 @@ class Register(BaseHandler):
   #          return self.write_json({'errno':1,'msg':'手机验证码不存在!'})
         ups = UserProfile.objects.filter(username=username)
         if ups:
-            return self.write_json({'errno':1,'msg':'昵称已存在，请换一个昵称！！！'})
+            return self.write_json({'errno':1,'msg':'昵称已存在，请换一个昵称'})
         try:
             User.objects.get(username=phone)
-            return self.write_json({'errno':1,'msg':'该手机号的用户已存在！！！'})
+            return self.write_json({'errno':1,'msg':'该手机号的用户已存在'})
         except User.DoesNotExist:
 #            user = User.objects.create_user(username=phone,password=password)
             user = User(username=phone)
@@ -119,7 +119,7 @@ class User_Upd_Password(BaseHandler):
             try:
                 ups = UserProfile.objects.get(user=user)
             except UserProfile.DoesNotExist:
-                return self.write_json({'errno':1,'msg':'不存在用户信息!'})
+                return self.write_json({'errno':1,'msg':'不存在用户信息'})
         try:
             ups = UserProfile.objects.get(user=user)
         except UserProfile.DoesNotExist:
@@ -167,7 +167,7 @@ class Upd_User_Info(BaseHandler):
             user = UserProfile.objects.get(id=user_info.get('userid'))
             name = UserProfile.objects.filter(~Q(username=request.user),username=user_info.get('username'))
             if name :
-                return self.write_json({'errno': 1, 'msg': '昵称已存在，请换一个昵称！！！'})
+                return self.write_json({'errno': 1, 'msg': '昵称已存在，请换一个昵称'})
             user.username = user_info.get('username')
             user.nickname = user_info.get('nickname')
             user.phone = user_info.get('phone')
@@ -189,7 +189,7 @@ class Upd_User_Info(BaseHandler):
         except UserProfile.DoesNotExist:
             return self.write_json({'errno': 1, 'msg': '不存在用户'})
         except BaseException:
-            return self.write_json({'errno': 1, 'msg': '手机号已存在！！！'})
+            return self.write_json({'errno': 1, 'msg': '手机号已存在'})
 
 
 class Upd_Head_Img(BaseHandler):
