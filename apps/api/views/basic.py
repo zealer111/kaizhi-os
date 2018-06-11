@@ -70,6 +70,7 @@ class Register(BaseHandler):
   #      ac = AuthCode.objects.filter(phone=phone,auth_code=auth_code).first()
   #      if not ac:
   #          return self.write_json({'errno':1,'msg':'手机验证码不存在!'})
+  #      ac.delete()
         ups = UserProfile.objects.filter(username=username)
         if ups:
             return self.write_json({'errno':1,'msg':'昵称已存在，请换一个昵称'})

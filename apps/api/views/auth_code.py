@@ -16,8 +16,8 @@ import json
 import hashlib
 from apps import settings
 
-APP_KEY = '612561c4930a78fcc022c93efe94ddc0'
-APP_SECRET = 'db626d3a9911'
+APP_KEY = '1fe1c5e93b43c0b37bc51481c0540246'
+APP_SECRET = '9352b751f6b4'
 SERVER_URL = 'https://api.netease.im/sms/sendcode.action'
 NONCE = generate_role_number()
 TEMPLATEID = '3882545'
@@ -59,7 +59,7 @@ class Get_Auth_Code(BaseHandler):
         'Content-Type':'application/x-www-form-urlencoded;charset=utf-8'
         }
         data= {
-        'templateid':TEMPLATEID,
+#        'templateid':TEMPLATEID,
         'mobile':msg.get('phone'),
         'authCode':pac.auth_code
         }

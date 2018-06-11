@@ -23,9 +23,35 @@ from libs import log_utils
 from libs import git_utils
 import logging
 
-logging.basicConfig(filename='/tmp/kaizhi3.log',level=logging.DEBUG)
+logging.basicConfig(filename=settings.LOG_FILE, level=logging.DEBUG)
 log_utils.default_logging_config()
 logger = log_utils.getLogger(__name__)
+
+##########################################
+# 根据git仓库来重新初始化存储
+##########################################
+
+def re_init_cards_by_package(package_id, package_dir, branch):
+    logger.info("re_init_cards_by_package: %s %s %s" % (package_id, package_dir, branch))
+    for parent,dirnames,filenames in os.walk(package_dir):
+        for dirname in  dirnames:
+            logger.debug("dirname(%s) - %s" % (parent, dirname))
+
+        for filename in filenames:
+            logger.debug("file(%s) - %s" % (parent, filename))
+
+            """
+            card = Card()
+            card.package_id = package_id
+            card.branch = branch
+            card.package_location = folder_location
+            card.c_type = settings.GIT_TYPE_DIR
+            card.file_name = folder_name
+            card.create_user = up
+            card.pid = folder_id
+            card.card_location = path
+            card.save()
+            """
 
 
 
@@ -39,6 +65,9 @@ def git_same_card_number(card_location):
     logger.info("git_same_card_number:%s %s" % (card_location, count))
     return count
 
+##########################################
+# 删除文件
+##########################################
 
 def delete_file(self, key, user,role):
     try:
@@ -1698,6 +1727,9 @@ class Rename_File(BaseHandler):
             c = Card.objects.filter(~Q(file_name=card.file_name),package_id=card.package_id,file_name=file_name)
             if c:
                 return self.write_json({'errno':1,'msg':'文件已存在'})
+
+            #TODO: 遍历每一个文件，分别检查源和目标文件
+
             if 0 == card.c_type:
                 new_name = file_name
                 result = git_utils.rename_file('0',card.package_location,card.branch,card.card_location,'',card.file_name,new_name)
@@ -1728,6 +1760,16 @@ class Rename_File(BaseHandler):
                     if c:
                         return self.write_json({'errno':1,'msg':'文件已存在'})
                     new_name = file_name +'.exam'
+
+                # 检查目标文件
+                new_path = os.path.join(folder_dir.card_location, new_name)
+                if git_same_card_number(new_path)>0:
+                    return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
+
+                # 检查源文件
+                if git_same_card_number(card.card_location)>1:
+                    return self.write_json({'errno':settings.ERR_FILE_USED,'msg':'有文件其他用户正在操作，无法重命名'})
+
                 result = git_utils.rename_file('1',card.package_location,card.branch,card.card_location,
                                                 folder_dir.card_location,card.file_name,new_name)
                 card.file_name = new_name
@@ -2779,34 +2821,37 @@ class Merge_Branch(BaseHandler):
 
             assi_package_path = assi_path(self,msg.get('assi_key'),False)
             copy_data = copy_assi_package(assi_package_path.get('data')[0])
-            delete_data = []
+            #delete_data = []
 
             #FIXME: var folder=>card
             for folder in assi_card:
-                logger.debug("card_location: %s %s" % (create_pack.id, folder.card_location,))
+                logger.debug("merge assi to master: %s %s" % (create_pack.id, folder.card_location,))
 
                 folder_dir = Card.objects.filter(package_id=create_pack.id, card_location=folder.card_location)
                 if len(folder_dir): #如果有重复
-                    delete_data.append(folder)
+                    #delete_data.append(folder)
+                    folder.delete()
 
-                if folder.pid == assi_pack.id:
-                    #  第一层目录
-                    #great_dir(folder, create_pack)
-                    folder.pid = create_pack.id
+                else:
+                    if folder.pid == assi_pack.id:
+                        #  第一层目录
+                        #great_dir(folder, create_pack)
+                        package_id = create_pack.id
+                        logger.debug("if-package_id: %s" % (package_id,))
+                    else:
+                        logger.debug("else-package_id: %s" % (folder.pid,))
+                        parent_card = Card.objects.get(id=folder.pid)
+                        master_card = Card.objects.filter(package_id=create_pack.id, card_location=parent_card.card_location)
+                        package_id = master_card[0].id
+
+                    folder.pid = package_id
                     folder.package_id = create_pack.id
                     folder.branch = create_pack.branch
                     folder.save()
-                else:
-                    parent_card = Card.objects.get(id=folder.pid)
-                    master_card = Card.objects.filter(package_id=create_pack.id, card_location=parent_card.card_location)
-                    if len(master_card):
-                        folder.pid = master_card[0].id
-                        folder.package_id = create_pack.id
-                        folder.branch = create_pack.branch
-                        folder.save()
+
             # 删除重复数据
-            for delete_card in delete_data:
-                delete_card.delete()
+            #for delete_card in delete_data:
+            #    delete_card.delete()
 
             #FIXME
             # git合并
@@ -2866,6 +2911,7 @@ class Merge_Master(BaseHandler):
             u_branch = User_Branch.objects.get(user=up,assi_package=assi_pack)
             create_pack = u_branch.create_package
             def copy_master_file(data, pid, package):
+                logger.debug("[copy_master_file] %s" % (pid,))
                 d = data['children']
                 for child in d:
                     child_data = child.get('children')
@@ -2886,6 +2932,7 @@ class Merge_Master(BaseHandler):
                         copy_master_file(child, card.id, package)
 
             def copy_master_package(value):
+                logger.debug("[copy_master_package]")
                 copy_master = Master_Package()
                 copy_master.create_user = create_pack.create_user
                 copy_master.package_name = value.get('title')
@@ -2895,37 +2942,41 @@ class Merge_Master(BaseHandler):
                 copy_master.save()
                 copy_master_file(value,copy_master.id,copy_master)
 
-                delete_data = []
-                master_card = Card.objects.filter(package_id=copy_master.id)
+                #delete_data = []
+                master_cards = Card.objects.filter(package_id=copy_master.id)
+
                 #FIXME
-                for folder in master_card:
+                for folder in master_cards:
                     folder_dir = Card.objects.filter(package_id=assi_pack.id, card_location=folder.card_location)
                     if len(folder_dir):
-                        delete_data.append(folder)
+                        logger.debug("card existed in assi_pack: %s %s" % (assi_pack.id, folder.card_location,))
+                        #delete_data.append(folder)
 
-                    logger.debug("card_location: %s %s" % (create_pack.id, folder.card_location,))
-                    if folder.pid == str(copy_master.id):
-                        #  第一层目录
-                        #great_dir(folder, create_pack)
-                        folder.pid = assi_pack.id
+                        folder.delete()
+                    else:
+
+                        logger.debug("card added into: %s %s" % (assi_pack.id, folder.card_location,))
+                        if folder.pid == str(copy_master.id):
+                            #  第一层目录
+                            #great_dir(folder, create_pack)
+                            package_id = assi_pack.id
+
+                            logger.debug("if-package_id: %s" % (package_id,))
+                        else:
+                            logger.debug("else-package_id: %s" % (folder.pid,))
+                            parent_card = Card.objects.get(id=folder.pid)
+                            master_card = Card.objects.filter(package_id=assi_pack.id, card_location=parent_card.card_location)
+                            folder.pid = master_card[0].id
+
+                        folder.pid = package_id
                         folder.package_id = assi_pack.id
                         folder.branch = assi_pack.branch
                         folder.package_location = assi_pack.package_location
                         folder.save()
 
-                    else:
-                        parent_card = Card.objects.get(id=folder.pid)
-                        master_card = Card.objects.filter(package_id=assi_pack.id, card_location=parent_card.card_location)
-                        if len(master_card):
-                            folder.pid = master_card[0].id
-                            folder.package_id = assi_pack.id
-                            folder.branch = assi_pack.branch
-                            folder.package_location = assi_pack.package_location
-                            folder.save()
-
                 # 删除重复数据
-                for delete_card in delete_data:
-                    delete_card.delete()
+                #for delete_card in delete_data:
+                #    delete_card.delete()
 
                 all_card = Card.objects.filter(package_id=copy_master.id)
                 for ac in all_card:
@@ -3244,98 +3295,100 @@ class Upload_Zip(BaseHandler):
                 package_id = p.id
                 package_location = p.package_location
                 branch = p.branch
+                parent_id = p.id
             else:
                 try:
                     folder = Card.objects.get(id=request.POST.get('key'))
                     package_id = folder.package_id
                     package_location = folder.package_location
                     branch = folder.branch
+                    parent_id = folder.id
                 except Card.DoesNotExist:
                     return self.write_json({'errno':1,'msg':'文件不存在'})
 
-                for f in file_field:
-                    if zipfile.is_zipfile(f):
-                        zfobj = zipfile.ZipFile(f)
-                        for name in zfobj.namelist():
-                            if name:
-                                filename = os.path.join(dirname,name)
-                                if 'MACOSX' not in filename and 'Store' not in filename:
-                                    dn = os.path.dirname(filename)
-                                    if not os.path.exists(dn):
-                                        os.makedirs(dn)
-                                    base_dir = os.path.dirname(filename)
-                                    jk = get_parent_path(filename[7:])
-                                    p_path = os.path.join(package_location,jk)
-                                    pid = Card.objects.filter(card_location=p_path)
-                                    fid = p.id
-                                    for ps in pid:
-                                        fid = ps.id
-                                    if os.path.isdir(filename):
-                                        c = Card.objects.filter(file_name=folder_name(filename[7:]),pid=fid)
-                                        if not c:
-                                            path = os.path.join(package_location,filename[7:])
+            for f in file_field:
+                if zipfile.is_zipfile(f):
+                    zfobj = zipfile.ZipFile(f)
+                    for name in zfobj.namelist():
+                        if name:
+                            filename = os.path.join(dirname,name)
+                            if 'MACOSX' not in filename and 'Store' not in filename:
+                                dn = os.path.dirname(filename)
+                                if not os.path.exists(dn):
+                                    os.makedirs(dn)
+                                base_dir = os.path.dirname(filename)
+                                jk = get_parent_path(filename[7:])
+                                p_path = os.path.join(package_location,jk)
+                                pid = Card.objects.filter(card_location=p_path)
+                                fid = parent_id
+                                for ps in pid:
+                                    fid = ps.id
+                                if os.path.isdir(filename):
+                                    c = Card.objects.filter(file_name=folder_name(filename[7:]),pid=fid)
+                                    if not c:
+                                        path = os.path.join(package_location,filename[7:])
+                                        card = Card()
+                                        card.package_id = package_id
+                                        card.branch = branch
+                                        card.package_location = package_location
+                                        card.file_name = folder_name(filename[7:])
+                                        card.c_type = 0
+                                        card.pid = fid
+                                        card.create_user = up
+                                        card.card_location = path[:-1]
+                                        result = git_utils.create_dir(package_location,branch,path[:-1])
+                                        card.save()
+                                else:
+                                    outfile = open(filename,'wb')
+                                    outfile.write(zfobj.read(name))
+                                    outfile.close()
+                                    fs = open(filename,'r')
+                                    lines = fs.read()
+                                    content = ''
+                                    for line in lines:
+                                        content += line
+                                    jd = get_parent_path(filename)
+                                    fname = (file_name(filename))
+                                    name, ext = os.path.splitext(fname)
+                                    if ext not in ['.md', '.video', '.exam']:
+                                        unuse.append({'file':filename[7:],'type':0})
+                                    fpath = os.path.join(package_location,filename[7:])
+                                    c = Card.objects.filter(file_name=fname,card_location=fpath)
+                                    if not c:
+                                        if  ext in ['.md', '.video', '.exam']:
                                             card = Card()
                                             card.package_id = package_id
                                             card.branch = branch
                                             card.package_location = package_location
-                                            card.file_name = folder_name(filename[7:])
-                                            card.c_type = 0
-                                            card.pid = fid
-                                            card.create_user = up
-                                            card.card_location = path[:-1]
-                                            result = git_utils.create_dir(package_location,branch,path[:-1])
-                                            card.save()
-                                    else:
-                                        outfile = open(filename,'wb')
-                                        outfile.write(zfobj.read(name))
-                                        outfile.close()
-                                        fs = open(filename,'r')
-                                        lines = fs.read()
-                                        content = ''
-                                        for line in lines:
-                                            content += line
-                                        jd = get_parent_path(filename)
-                                        fname = (file_name(filename))
-                                        name, ext = os.path.splitext(fname)
-                                        if ext not in ['.md', '.video', '.exam']:
-                                            unuse.append({'file':filename[7:],'type':0})
-                                        fpath = os.path.join(package_location,filename[7:])
-                                        c = Card.objects.filter(file_name=fname,card_location=fpath)
-                                        if not c:
-                                            if  ext in ['.md', '.video', '.exam']:
-                                                card = Card()
-                                                card.package_id = package_id
-                                                card.branch = branch
-                                                card.package_location = package_location
-                                                card.file_name = fname
-                                                card.card_location = fpath
-                                                card.content = content
-                                                card.c_type = 1
-                                                if '.video' in fname:
-                                                    card.tags = 1
-                                                    verify = verify_content(self,content)
-                                                    if 0 == verify.get('errno'):
-                                                        card.save()
-                                                        pass
-                                                    else:
-                                                        unuse.append({'file':filename[7:],'type':1})
-                                                elif '.exam' in fname:
-                                                    card.tags = 2
-                                                    verify = verify_content(self,content)
-                                                    if 0 == verify.get('errno'):
-                                                        card.save()
-                                                        pass
-                                                    else:
-                                                        unuse.append({'file':filename[7:],'type':1})
-                                                card.create_user = up
-                                                card.pid = fid
-                                                result = git_utils.create_file(package_location,branch,fpath,content)
+                                            card.file_name = fname
+                                            card.card_location = fpath
+                                            card.content = content
+                                            card.c_type = 1
+                                            if '.video' in fname:
+                                                card.tags = 1
                                                 verify = verify_content(self,content)
                                                 if 0 == verify.get('errno'):
                                                     card.save()
                                                     pass
                                                 else:
                                                     unuse.append({'file':filename[7:],'type':1})
+                                            elif '.exam' in fname:
+                                                card.tags = 2
+                                                verify = verify_content(self,content)
+                                                if 0 == verify.get('errno'):
+                                                    card.save()
+                                                    pass
+                                                else:
+                                                    unuse.append({'file':filename[7:],'type':1})
+                                            card.create_user = up
+                                            card.pid = fid
+                                            result = git_utils.create_file(package_location,branch,fpath,content)
+                                            verify = verify_content(self,content)
+                                            if 0 == verify.get('errno'):
+                                                card.save()
+                                                pass
+                                            else:
+                                                unuse.append({'file':filename[7:],'type':1})
             if '0' == role:
                 file_dir = get_file_path_as_card(self, up, False)
             elif '1' == role:
@@ -3344,3 +3397,10 @@ class Upload_Zip(BaseHandler):
             return self.write_json(file_dir)
         except UserProfile.DoesNotExist:
             return self.write_json({'errno':1,'msg':'用户不存在'})
+
+
+class Test(BaseHandler):
+
+    def get(self,request):
+        re_init_cards_by_package('999999','/data/www/vhosts/kaizhi-git-server/repos/xiaoweizxcvbnm写作课五期', 'master')
+        return self.write_json({'errno':0,'msg':'sucess'})

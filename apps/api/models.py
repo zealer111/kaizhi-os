@@ -279,7 +279,7 @@ class Card(BaseBackBone):
     tags = models.SmallIntegerField('标签',choices=TAGS,default=0)
     c_type = models.SmallIntegerField('类型',choices=C_TYPE,default=0)
     create_user = models.ForeignKey(UserProfile,verbose_name='创建用户',related_name='card_user',on_delete=models.CASCADE)
-    content = models.TextField('文件内容',max_length=1000,blank=True,null=True)
+    #content = models.TextField('文件内容',max_length=1000,blank=True,null=True)
     count = models.IntegerField('评论次数',default=0,blank=True,null=True)
     reset_count = models.IntegerField('撤销次数',default=0,blank=True,null=True)
     modify_count = models.IntegerField('修改次数',default=1,blank=True,null=True)
@@ -303,10 +303,10 @@ class Card(BaseBackBone):
 
     def save(self, *args, **kwargs):
         if not self.reply_time:
-            self.reply_time = '2011-11-11 11:11:11' 
+            self.reply_time = '2011-11-11 11:11:11'
         super(Card,self).save(*args, **kwargs)
 
-         
+
 class User_Study_Record(BaseBackBone):
     IS_STUDY = ((0,'未学习'),(1,'已学习'))
 
