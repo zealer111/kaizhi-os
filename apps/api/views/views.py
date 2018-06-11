@@ -40,20 +40,6 @@ def re_init_cards_by_package(package_id, package_dir, branch):
         for filename in filenames:
             logger.debug("file(%s) - %s" % (parent, filename))
 
-            """
-            card = Card()
-            card.package_id = package_id
-            card.branch = branch
-            card.package_location = folder_location
-            card.c_type = settings.GIT_TYPE_DIR
-            card.file_name = folder_name
-            card.create_user = up
-            card.pid = folder_id
-            card.card_location = path
-            card.save()
-            """
-
-
 
 ##########################################
 # 检测对应的文件是否在其他分支里有
@@ -64,6 +50,21 @@ def git_same_card_number(card_location):
     count = len(cards)
     logger.info("git_same_card_number:%s %s" % (card_location, count))
     return count
+
+
+
+##########################################
+# Get PID from cards
+##########################################
+
+def get_pid_from_card(package_id,p_path):
+    logger.info("get_pid_from_card: %s" % (p_path,))
+    cards = Card.objects.filter(package_id=package_id,card_location=p_path)
+    if len(cards):
+        return card[0].id
+    else:
+        return -1
+
 
 ##########################################
 # 删除文件
@@ -2768,7 +2769,7 @@ class Merge_Branch(BaseHandler):
             assi_pack = Branch_Package.objects.get(id=msg.get('assi_key'))
             u_branch = User_Branch.objects.get(user=user,assi_package=assi_pack)
             create_pack = u_branch.create_package
-            assi_card = Card.objects.filter(package_id=assi_pack.id).order_by('create_time')
+            assi_cards = Card.objects.filter(package_id=assi_pack.id).order_by('create_time')
             assi_key = ''
 
             logger.info("Merge_Branch")
@@ -2795,36 +2796,37 @@ class Merge_Branch(BaseHandler):
                         copy_assi_file(child, card.id, package)
 
             def copy_assi_package(value):
-                copy_assi_package = Branch_Package()
-                copy_assi_package.create_user = assi_pack.create_user
-                copy_assi_package.package_name = value.get('title')
-                copy_assi_package.branch = assi_pack.create_user.phone
-                copy_assi_package.package_location = assi_pack.package_location
-                copy_assi_package.role = 1
-                copy_assi_package.save()
-                assi_key = copy_assi_package.id
+                assi_package_copy = Branch_Package()
+                assi_package_copy.create_user = assi_pack.create_user
+                assi_package_copy.package_name = value.get('title')
+                assi_package_copy.branch = assi_pack.create_user.phone
+                assi_package_copy.package_location = assi_pack.package_location
+                assi_package_copy.role = 1
+                assi_package_copy.save()
+                assi_key = assi_package_copy.id
                 message = System_Message.objects.get(id=msg.get('messageid'))
                 message.apply_status = 1
                 message.key = assi_key
                 message.save()
                 #b = User_Branch.objects.filter(user=assi_pack.create_user,create_package=create_pack,
-                #                                assi_package=copy_assi_package)
+                #                                assi_package=assi_package_copy)
                 #if not b:
                 user_branch = User_Branch()
                 user_branch.user = assi_pack.create_user
                 user_branch.create_package = create_pack
-                user_branch.assi_package = copy_assi_package
+                user_branch.assi_package = assi_package_copy
                 user_branch.branch = assi_pack.create_user.phone
                 user_branch.save()
                 #
-                copy_assi_file(value,copy_assi_package.id,copy_assi_package)
+                copy_assi_file(value,assi_package_copy.id,assi_package_copy)
 
             assi_package_path = assi_path(self,msg.get('assi_key'),False)
             copy_data = copy_assi_package(assi_package_path.get('data')[0])
             #delete_data = []
 
             #FIXME: var folder=>card
-            for folder in assi_card:
+            update_cards = []
+            for folder in assi_cards:
                 logger.debug("merge assi to master: %s %s" % (create_pack.id, folder.card_location,))
 
                 folder_dir = Card.objects.filter(package_id=create_pack.id, card_location=folder.card_location)
@@ -2840,14 +2842,21 @@ class Merge_Branch(BaseHandler):
                         logger.debug("if-package_id: %s" % (package_id,))
                     else:
                         logger.debug("else-package_id: %s" % (folder.pid,))
-                        parent_card = Card.objects.get(id=folder.pid)
-                        master_card = Card.objects.filter(package_id=create_pack.id, card_location=parent_card.card_location)
-                        package_id = master_card[0].id
+                        package_id = 0
+                        #parent_card = Card.objects.get(id=folder.pid)
+                        #master_card = Card.objects.filter(package_id=create_pack.id, card_location=parent_card.card_location)
+                        #package_id = master_card[0].id
 
                     folder.pid = package_id
                     folder.package_id = create_pack.id
                     folder.branch = create_pack.branch
                     folder.save()
+
+            # 最后重新更新pid
+            for item in update_cards:
+                item.pid = get_pid_from_card(create_pack.id, os.path.dirname(item.card_location))
+                item.save()
+
 
             # 删除重复数据
             #for delete_card in delete_data:
@@ -2945,17 +2954,17 @@ class Merge_Master(BaseHandler):
                 #delete_data = []
                 master_cards = Card.objects.filter(package_id=copy_master.id)
 
+                update_cards = []
                 #FIXME
                 for folder in master_cards:
                     folder_dir = Card.objects.filter(package_id=assi_pack.id, card_location=folder.card_location)
                     if len(folder_dir):
                         logger.debug("card existed in assi_pack: %s %s" % (assi_pack.id, folder.card_location,))
                         #delete_data.append(folder)
-
                         folder.delete()
                     else:
-
                         logger.debug("card added into: %s %s" % (assi_pack.id, folder.card_location,))
+
                         if folder.pid == str(copy_master.id):
                             #  第一层目录
                             #great_dir(folder, create_pack)
@@ -2964,15 +2973,23 @@ class Merge_Master(BaseHandler):
                             logger.debug("if-package_id: %s" % (package_id,))
                         else:
                             logger.debug("else-package_id: %s" % (folder.pid,))
-                            parent_card = Card.objects.get(id=folder.pid)
-                            master_card = Card.objects.filter(package_id=assi_pack.id, card_location=parent_card.card_location)
-                            folder.pid = master_card[0].id
+                            package_id = 0
+                            update_cards.append(folder)
+                            #parent_card = Card.objects.get(id=folder.pid)
+                            #master_card = Card.objects.filter(package_id=assi_pack.id, card_location=parent_card.card_location)
+                            #folder.pid = master_card[0].id
 
                         folder.pid = package_id
                         folder.package_id = assi_pack.id
                         folder.branch = assi_pack.branch
                         folder.package_location = assi_pack.package_location
                         folder.save()
+
+
+                # 最后重新更新pid
+                for item in update_cards:
+                    item.pid = get_pid_from_card(assi_pack.id, os.path.dirname(item.card_location))
+                    item.save()
 
                 # 删除重复数据
                 #for delete_card in delete_data:
