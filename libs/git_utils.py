@@ -61,6 +61,15 @@ def create_dir(package_location,branch,path):
     r = requests.post(url,data = data)
     return r.json()
 
+def create_branch(package_location,branch):
+    data = {
+     'repo':package_location,
+     'branch':branch,
+    }
+    url = settings.GIT_BRANCH_URLH
+    r = requests.post(url,data = data)
+    return r.json()
+
 
 def get_file_content(package_location,branch,path):
     datas = {

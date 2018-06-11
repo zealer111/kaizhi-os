@@ -7,3 +7,4 @@ static
 run.sh
 dev.py
 *.sw*
+nohup.out

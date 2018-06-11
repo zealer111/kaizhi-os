@@ -16,10 +16,10 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from apps import settings
 from apps.backs.utils import auth_decorator
+from libs import git_utils
 
 
 def file_path(self,key, return_json=True):
-
     package = Master_Package.objects.get(id=key)
     data = []
     data.append({
@@ -70,6 +70,7 @@ def file_path(self,key, return_json=True):
     else:
         return {'errno':0, 'msg': 'success','data':getChildren()}
 
+#后台管理-管理员登陆
 class Login(BaseHandler):
     @logger_decorator
     def post(self, request):
@@ -79,18 +80,18 @@ class Login(BaseHandler):
         try:
             admin = UserProfile.objects.get(phone=phone)
         except:
-            return self.write_json({'errno':1,'msg':'用户不存在!'})
+            return self.write_json({'errno':1,'msg':'用户不存在'})
         if 1 != admin.role:
-            return self.write_json({'errno':'1','msg':'该用户不是管理员！！！'})
+            return self.write_json({'errno':'1','msg':'该用户不是管理员'})
         user = authenticate(request, username=phone, password=password)
         if user:
             login(request, user)
             try:
                 up = UserProfile.objects.get(user=user)
             except UserProfile.DoesNotExist:
-                return self.write_json({'errno':1,'msg':'用户不存在!'})
+                return self.write_json({'errno':1,'msg':'用户不存在'})
         else:
-            return self.write_json({'errno':'1','msg':'密码错误，请重新输入！！！'})
+            return self.write_json({'errno':'1','msg':'密码错误，请重新输入'})
 
         request.session['username'] = up.username
         request.session.set_expiry(300)
@@ -104,7 +105,7 @@ class Login(BaseHandler):
            }
         return self.write_json({'errno': 0, 'msg': 'success', 'data': data})
 
-
+#后台管理-获取全部用户
 class Get_User(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -143,7 +144,7 @@ class Check_User(BaseHandler):
     def post(self,request):
         return self.write_json({'errno':0,'msg':''})
 
-
+#后台管理—获取全部用户
 class Get_All_User(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -157,7 +158,7 @@ class Get_All_User(BaseHandler):
             })
         return self.write_json({'errno':0,'msg':'success','data':data})
 
-
+#后台管理-获取全部课程
 class Get_All_Course(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -170,7 +171,7 @@ class Get_All_Course(BaseHandler):
             })
         return self.write_json({'errno':0,'msg':'success','data':data})
 
-
+#后台管理-获取全部卡包
 class Get_All_Package(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -211,7 +212,7 @@ class Get_All_Package(BaseHandler):
         p = Paginator(data,request.POST.get('limit'))
         return self.write_json({'code':0,'msg':'success','count':package.count(),'data':p.page(page).object_list})
 
-
+#后台管理-获取协作者卡包
 class Get_Assi_Package(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -252,7 +253,7 @@ class Get_Assi_Package(BaseHandler):
         p = Paginator(data,request.POST.get('limit'))
         return self.write_json({'code':0,'msg':'success','count':package.count(),'data':p.page(page).object_list})
 
-
+#后台管理-获取全部消息
 class Get_Message(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -274,7 +275,7 @@ class Get_Message(BaseHandler):
         p = Paginator(data,request.POST.get('limit'))
         return self.write_json({'code':0,'msg':'success','count':message.count(),'data':p.page(page).object_list})
 
-
+#后台管理-管理员发消息
 class Send_Message(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -303,9 +304,9 @@ class Send_Message(BaseHandler):
                     message.save()
             return self.write_json({'errno':0,'msg':'success'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'输入格式有误！！！'})
+            return self.write_json({'errno':1,'msg':'输入格式有误'})
 
-
+#后台管理-搜索消息
 class Message_Search(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -327,7 +328,7 @@ class Message_Search(BaseHandler):
                 p = Paginator(data,request.POST.get('limit'))
         return self.write_json({'code':0,'msg':'success','count':user.count(),'data':p.page(page).object_list})
 
-
+#后台管理-删除消息
 class Delete_Message(BaseHandler):
     @logger_decorator
     @transaction.atomic
@@ -338,7 +339,7 @@ class Delete_Message(BaseHandler):
             msg.delete()
         return self.write_json({'errno':0,'msg':'success'})
 
-
+#后台管理-添加卡包标记位
 class Add_Package_Sign(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -349,11 +350,11 @@ class Add_Package_Sign(BaseHandler):
             package.save()
             return self.write_json({'errno':0,'msg':'success'})
         except Master_Package.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'卡包不存在！！！'})
+            return self.write_json({'errno':1,'msg':'卡包不存在'})
         except Card.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'卡片不存在！！！'})
+            return self.write_json({'errno':1,'msg':'卡片不存在'})
 
-
+#后台管理-获取用户购买记录
 class Get_User_Buy_Record(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -393,7 +394,7 @@ class Get_User_Buy_Record(BaseHandler):
         p = Paginator(data,request.POST.get('limit'))
         return self.write_json({'code':0,'msg':'success','count':user.count(),'data':p.page(page).object_list})
 
-
+#后台管理-添加用户购买课程
 class User_Buy_Course(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -410,7 +411,7 @@ class User_Buy_Course(BaseHandler):
             buy.save()
         return self.write_json({'errno':0,'msg':'success'})
 
-
+#后台管理-更新用户购买课程信息
 class Upd_Buy_Course(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -425,7 +426,7 @@ class Upd_Buy_Course(BaseHandler):
         buy.save()
         return self.write_json({'errno':0,'msg':'success'})
 
-
+#后台管理-获取master卡包下面的卡片
 class Get_Card(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -445,9 +446,9 @@ class Get_Card(BaseHandler):
                 })
             return self.write_json({'errno':0,'msg':'success','data':data})
         except Package.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'卡包不存在！！！'})
+            return self.write_json({'errno':1,'msg':'卡包不存在'})
 
-
+#后台管理-获取全部课程
 class Get_Course(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -541,7 +542,7 @@ class Get_Course(BaseHandler):
         p = Paginator(data,request.POST.get('limit'))
         return self.write_json({'code': 0,'msg': 'success','count':course.count(),'data': p.page(page).object_list})
 
-
+#后台管理-删除课程
 class Delete_Course(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -552,20 +553,14 @@ class Delete_Course(BaseHandler):
                 p = Master_Package.objects.filter(course=course,p_type=2)
                 if p:
                     for ps in p:
-                        da = {
-                            'branch':'master',
-                            'repo':ps.package_location
-                        }
-                        url = settings.GIT_DELETE_REPO
-                        r = requests.post(url,data=da)
-                        result = r.json()
+                        result = git_utils.delete_package(ps.package_location)
                         ps.delete()
                 course.delete()
             return self.write_json({'errno':0,'msg':'success'})
         except Course.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'课程不存在！！！'})
+            return self.write_json({'errno':1,'msg':'课程不存在'})
 
-
+#后台管理-删除卡包
 class Delete_Package(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -573,19 +568,13 @@ class Delete_Package(BaseHandler):
         try:
             for ss in s:
                 p = Master_Package.objects.get(id=ss.get('id'))
-                da = {
-                    'branch':'master',
-                    'repo':p.package_location
-                    }
-                url = settings.GIT_DELETE_REPO
-                r = requests.post(url,data=da)
-                result = r.json()
+                result = git_utils.delete_package(p.package_location)
                 p.delete()
             return self.write_json({'errno':0,'msg':'success'})
         except Course.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'课程不存在！！！'})
+            return self.write_json({'errno':1,'msg':'课程不存在'})
 
-
+#后台管理-删除协作分支
 class Delete_Assistant(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -593,20 +582,13 @@ class Delete_Assistant(BaseHandler):
         try:
             for ss in s:
                 p = Branch_Package.objects.get(id=ss.get('id'))
-                da = {
-                    'branch':'master',
-                    'del_branch':p.branch,
-                    'repo':p.package_location
-                    }
-                url = settings.GIT_DELETE_BRANCH
-                r = requests.post(url,data=da)
-                result = r.json()
+                result = git_utils.delete_branch(p.package_location,'master',p.branch)
                 p.delete()
             return self.write_json({'errno':0,'msg':'success'})
         except Package.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'卡包不存在！！！'})
+            return self.write_json({'errno':1,'msg':'卡包不存在'})
 
-
+#后台管理-获取协作者
 class Get_Assistant_User(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -626,7 +608,7 @@ class Get_Assistant_User(BaseHandler):
         p = Paginator(data,request.POST.get('limit'))
         return self.write_json({'code':0,'msg':'success','count':user.count(),'data':p.page(page).object_list})
 
-
+#后台管理-master创建的卡包
 class User_Package(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -652,7 +634,7 @@ class User_Package(BaseHandler):
             })
         return self.write_json({'errno':0,'msg':'success','data':data,'user':user})
 
-
+#后台管理-删除用户
 class Delete_User(BaseHandler):
     @logger_decorator
     @transaction.atomic
@@ -665,7 +647,7 @@ class Delete_User(BaseHandler):
             up.delete()
         return self.write_json({'errno':0,'msg':'success'})
 
-
+#后台管理-删除用户购买课程信息
 class Delete_Buy_Course(BaseHandler):
     @logger_decorator
     @transaction.atomic
@@ -676,7 +658,7 @@ class Delete_Buy_Course(BaseHandler):
             buy.delete()
         return self.write_json({'errno':0,'msg':'success'})
 
-
+#后台管理-编辑课程
 class Modify_Course(BaseHandler):
     @logger_decorator
     def post(self, request):
@@ -745,10 +727,9 @@ class Modify_Course(BaseHandler):
         except Course.DoesNotExist:
             return self.write_json({'errno': 1, 'msg': '不存在课程信息'})
         except Master_Package.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在卡包！！！'})
+            return self.write_json({'errno': 1, 'msg': '不存在卡包'})
 
-
-
+#后台管理-搜索协作用户
 class Assistant_User_Search(BaseHandler):
     @logger_decorator
     def post(self,request):
@@ -769,7 +750,7 @@ class Assistant_User_Search(BaseHandler):
         p = Paginator(data,request.POST.get('limit'))
         return self.write_json({'code':0,'msg':'success','count':user.count(),'data':p.page(page).object_list})
 
-
+#后台管理-分配协作者
 class User_Assistant(BaseHandler):
     @logger_decorator
     @transaction.atomic
@@ -811,14 +792,7 @@ class User_Assistant(BaseHandler):
                 assi_package.branch = up.phone
                 assi_package.package_location = p.package_location
                 assi_package.role = 1
-                data = {
-                    'branch':up.phone,
-                    'repo':p.package_location
-                    }
-                url = settings.GIT_BRANCH_URL
-                r = requests.post(url,data=data)
-                result = r.json()
-                print(result)
+                result = git_utils.create_branch(p.package_location,up.phone)
                 if '0' == result.get('errno'):
                     assi_package.branch_name = result.get('data')['branch']
                     assi_package.save()
@@ -832,19 +806,19 @@ class User_Assistant(BaseHandler):
                         user_branch.save()
                     create_file(value, assi_package.id, assi_package)
                 else:
-                    return self.write_json({'errno': 1, 'msg': '分支已存在！！！'})
+                    return self.write_json({'errno': 1, 'msg': '分支已存在'})
             create_user = UserProfile.objects.get(id=user_info.get('create_user'))
             path = file_path(self,key,False)
             s = create_pack(path.get('data')[0])
             return self.write_json({'errno': 0, 'msg': 'success'})
         except Master_Package.DoesNotExist:
-            return self.write_json({'errno': 0, 'msg': '不存在卡包!!!'})
+            return self.write_json({'errno': 0, 'msg': '不存在卡包'})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在用户!!!'})
+            return self.write_json({'errno': 1, 'msg': '不存在用户'})
         except User_Branch.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在用户分支信息!!!'})
+            return self.write_json({'errno': 1, 'msg': '不存在用户分支信息'})
 
-
+#后台管理-更新用户信息
 class Upd_User_Info(BaseHandler):
     @logger_decorator
     @transaction.atomic
@@ -854,7 +828,7 @@ class Upd_User_Info(BaseHandler):
             user = UserProfile.objects.get(id=user_info.get('userid'))
             name = UserProfile.objects.filter(~Q(username=user.username),username=user_info.get('username'))
             if name :
-                return self.write_json({'errno': 1, 'msg': '昵称已存在，请换一个昵称！！！'})
+                return self.write_json({'errno': 1, 'msg': '昵称已存在，请换一个昵称'})
             user.username = user_info.get('username')
             user.nickname = user_info.get('nickname')
             user.phone = user_info.get('phone')
