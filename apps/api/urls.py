@@ -1,7 +1,7 @@
 #coding:utf-8
 from django.conf.urls import url
 
-from .views import views,basic,auth_code
+from .views import views,xcx,basic,auth_code
 
 from .youzan import youzan
 
@@ -80,4 +80,9 @@ urlpatterns +=[
     url('^user_apply_course', youzan.User_Apply_Course.as_view()),
     url('^buy_course_info', youzan.Buy_Course_Info.as_view()),
     url('^msg', auth_code.Msg.as_view()),
+]
+
+# 小程序API
+urlpatterns +=[
+    url('^xcx/authcode', xcx.AuthCode.as_view()),
 ]

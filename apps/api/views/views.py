@@ -1826,7 +1826,7 @@ class Get_File(BaseHandler):
             up = UserProfile.objects.get(username=request.user)
             for key in file_key:
                 card = Card.objects.get(id=key,c_type=1)
-                logger.info("get file: %s %s " % (up, card.branch))
+                logger.info("get file: %s %s %s" % (up, card.branch,key))
                 result = git_utils.get_file_content(card.package_location,card.branch,card.card_location)
                 content = result['data'].get('content')
                 if 0 == card.tags:
@@ -2670,7 +2670,7 @@ class File_Diff(BaseHandler):
                         'content':mess.content,
                         'create_time':str(mess.create_time)[19:]
                         }
-                result = git_utils.file_diff(msg.get('role'),'1',p.package_location,'master',p.branch)
+                result = git_utils.file_diff(msg.get('role'),'1',p.package_location,'master',p.branch,'')
                 if '0' == result.get('errno'):
                     s = result.get('data')
                     ss = s[0] if type(s)==list else s
@@ -2784,9 +2784,9 @@ class Merge_Branch(BaseHandler):
             #FIXME: var folder=>card
             for folder in assi_card:
                 logger.debug("card_location: %s %s" % (create_pack.id, folder.card_location,))
-                folder_dir = Card.objects.filter(package_id=create_pack.id, card_location=folder.card_location)
 
-                if len(folder_dir):
+                folder_dir = Card.objects.filter(package_id=create_pack.id, card_location=folder.card_location)
+                if len(folder_dir): #如果有重复
                     delete_data.append(folder)
 
                 if folder.pid == assi_pack.id:
@@ -2894,6 +2894,7 @@ class Merge_Master(BaseHandler):
                 copy_master.role = 0
                 copy_master.save()
                 copy_master_file(value,copy_master.id,copy_master)
+
                 delete_data = []
                 master_card = Card.objects.filter(package_id=copy_master.id)
                 #FIXME
