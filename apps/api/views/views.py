@@ -1530,7 +1530,7 @@ class Comment_Page(BaseHandler):
                     'is_my_comment':is_my_comment,
                     'user':cs.user.username,
                     'head_img':cs.user.head_img,
-                    'content':cs.content,
+                    #'content':cs.content, ## FIXME: get card's content
                     'create_time':str(cs.create_time)[19:]
                 })
             p = Paginator(data,count)
@@ -1559,7 +1559,7 @@ class Batch_Modify_File(BaseHandler):
                 for content in content_list:
                     card = Card.objects.get(id=content.get('key'))
                     result = git_utils.modify_file('1',card.package_location,card.branch,card.card_location,content.get('content'))
-                    card.content = content.get('content')
+                    #card.content = content.get('content')
                     card.create_user = up
                     card.modify_count +=1
                     card.save()
@@ -1571,7 +1571,7 @@ class Batch_Modify_File(BaseHandler):
                 for content in content_list:
                     card = Card.objects.get(id=content.get('key'))
                     result = git_utils.modify_file('1',card.package_location,card.branch,card.card_location,content.get('content'))
-                    card.content = content.get('content')
+                    #card.content = content.get('content')
                     card.create_user = up
                     card.modify_count +=1
                     card.save()
@@ -1583,7 +1583,7 @@ class Batch_Modify_File(BaseHandler):
                     result = git_utils.modify_file('0',card.package_location,card.branch,card.card_location,content.get('content'))
                     #判断内容是否变更
                     if '0' == result.get('errno'):
-                        card.content = content.get('content')
+                        #card.content = content.get('content')
                         card.create_user = up
                         card.modify_count +=1
                         card.save()
@@ -1621,7 +1621,7 @@ class Copy_File(BaseHandler):
                         cp_card.file_name = card.file_name
                         cp_card.c_type = 1
                         cp_card.tags = card.tags
-                        cp_card.content = card.content
+                        #cp_card.content = card.content
                         cp_card.create_user = up
                         cp_card.pid = package_dir.id
                         result = git_utils.copy_file('0',package_dir.package_location,package_dir.package_location
@@ -1646,7 +1646,7 @@ class Copy_File(BaseHandler):
                         cp_card.file_name = card.file_name
                         cp_card.c_type = 1
                         cp_card.tags = card.tags
-                        cp_card.content = card.content
+                        #cp_card.content = card.content
                         cp_card.create_user = up
                         cp_card.pid = card_dir.id
                         result = git_utils.copy_file('0',card_dir.package_location,card_dir.card_location,cp_card.branch,
@@ -1674,7 +1674,7 @@ class Copy_File(BaseHandler):
                         cp_card.file_name = card.file_name
                         cp_card.c_type = 1
                         cp_card.tags = card.tags
-                        cp_card.content = card.content
+                        #cp_card.content = card.content
                         cp_card.create_user = up
                         cp_card.pid = package_dir.id
                         result = git_utils.copy_file('1',package_dir.package_location,package_dir.package_location
@@ -1688,10 +1688,10 @@ class Copy_File(BaseHandler):
                     for keys in copy_key:
                         try:
                             card_dir = Card.objects.get(id=copy_to_key)
-                            c = Card.objects.get(id=keys)
+                            card = Card.objects.get(id=keys)
                         except Card.DoesNotExist:
                             return self.write_json({'errno':'1','msg':'文件不存在'})
-                        _card = Card.objects.filter(pid=card_dir.id,file_name=c.file_name)
+                        _card = Card.objects.filter(pid=card_dir.id,file_name=card.file_name)
                         if _card:
                             return self.write_json({'errno':'1','msg':'文件已存在'})
                         cp_card = Card()
@@ -1701,14 +1701,14 @@ class Copy_File(BaseHandler):
                         cp_card.file_name = card.file_name
                         cp_card.c_type = 1
                         cp_card.tags = card.tags
-                        cp_card.content = card.content
+                        #cp_card.content = card.content
                         cp_card.create_user = up
                         cp_card.pid = card_dir.id
                         result = git_utils.copy_file('0',card_dir.package_location,card_dir.card_location,cp_card.branch,
                                                        card.card_location)
-                        cp_card.card_location = os.path.join(card_dir.card_location,c.file_name)
+                        cp_card.card_location = os.path.join(card_dir.card_location,card.file_name)
                         cp_card.save()
-                        c.delete()
+                        card.delete()
                 return get_file_dir(self,role,up)
             except Card.DoesNotExist:
                 return self.write_json({'errno':1,'msg':'卡片不存在'})
@@ -1719,6 +1719,7 @@ class Rename_File(BaseHandler):
     @auth_decorator
     @transaction.atomic
     def post(self,request):
+        logger.info("Rename_File")
         msg = json.loads(request.body)
         file_name = msg.get('file_name')
         role = msg.get('role')
@@ -1743,7 +1744,7 @@ class Rename_File(BaseHandler):
                     dirs.create_user = up
                     dirs.save()
                 card.save()
-                return get_file_path(self,role,up)
+                return get_file_dir(self,role,up)
             elif 1 == card.c_type:
                 folder_dir = Card.objects.get(id=card.pid)
                 if  0 == card.tags:
@@ -1776,7 +1777,7 @@ class Rename_File(BaseHandler):
                 card.file_name = new_name
                 card.card_location = result.get('data')['repo']
                 card.save()
-                return get_file_path(self,role,up)
+                return get_file_dir(self,role,up)
             return self.write_json({'errno':0,'msg':'修改成功'})
         except Card.DoesNotExist:
             folder_dir = get_package(self,card.pid)
@@ -1803,7 +1804,7 @@ class Rename_File(BaseHandler):
             card.file_name = new_name
             card.card_location = result['data'].get('repo')
             card.save()
-            return get_file_path(self,role,up)
+            return get_file_dir(self,role,up)
 
 #教学中心-卡包重命名
 class Rename_Package(BaseHandler):
@@ -1811,6 +1812,7 @@ class Rename_Package(BaseHandler):
     @auth_decorator
     @transaction.atomic
     def post(self,request):
+        logger.info("Rename_Package")
         msg = json.loads(request.body)
         try:
             up = UserProfile.objects.get(username=request.user)
@@ -3307,6 +3309,7 @@ class Upload_Zip(BaseHandler):
             role = request.POST.get('role')
             up = UserProfile.objects.get(id=userid,token=token)
             p = get_package(self,request.POST.get('key'))
+            logger.debug("upload zip : %s %s %s %s %s" % (userid,token,role,up,p))
             unuse = []
             if p:
                 package_id = p.id
