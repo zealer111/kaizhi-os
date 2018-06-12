@@ -1686,58 +1686,6 @@ class Rename_File(BaseHandler):
             card.save()
             return get_file_dir(self,role,up)
 
-#教学中心-卡包重命名
-class Rename_Package(BaseHandler):
-    @logger_decorator
-    @auth_decorator
-    @transaction.atomic
-    def post(self,request):
-        logger.info("Rename_Package")
-        msg = json.loads(request.body)
-        try:
-            up = UserProfile.objects.get(username=request.user)
-            package = Master_Package.objects.get(id=msg.get('key'))
-
-            """
-            #FIXME
-            data = {
-              'branch':package.branch,
-              'dirname':up.username + package.package_name,
-              'path':package.package_location,
-              'new_dirname':up.username + msg.get('package_name')
-             }
-            url = settings.GIT_RENAME_REPO
-            r = requests.post(url,data=data)
-            result = r.json()
-            """
-
-            package.package_name = msg.get('package_name')
-            package.save()
-            """
-                _dir = Card.objects.filter(pid=package.id)
-                for dirs in _dir:
-                    if 0 == dirs.c_type:
-                        dir_path = os.path.join(package.package_location,dirs.file_name)
-                        dirs.card_location = dir_path
-                        dirs.package_location = package.package_location
-                        dirs.save()
-                        card_dir = Card.objects.filter(pid=dirs.id)
-                        for cards in card_dir:
-                            card_path = os.path.join(dirs.card_location,cards.file_name)
-                            cards.card_location = card_path
-                            cards.package_location = package.package_location
-                            cards.save()
-                    elif 1 == dirs.c_type:
-                        dir_path = os.path.join(package.package_location,dirs.file_name)
-                        dirs.card_location = dir_path
-                        dirs.package_location = package.package_location
-                        dirs.save()
-            """
-            return file_path(self,up)
-        except Master_Package.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'卡包不存在'})
-        except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'用户不存在'})
 
 #教学中心-查看卡片
 class Get_File(BaseHandler):

@@ -42,9 +42,9 @@ urlpatterns = [
     url('^course_dir', views.Course_Dir.as_view()),
     url('^delete_package', views.Delete_Package.as_view()),
     url('^delete_file', views.Delete_File.as_view()),
-    url('^rename_package', views.Rename_Package.as_view()),
+    url('^rename_package', teacher.Rename_Package.as_view()),
     url('^rename_file', views.Rename_File.as_view()),
-    url('^modify_file', views.Modify_File.as_view()),
+    url('^modify_file', teacher.Modify_File.as_view()),
     url('^modify_discuss_file', views.Modify_Discuss_File.as_view()),
     url('^batch_modify_file', views.Batch_Modify_File.as_view()),
     # 教学中心

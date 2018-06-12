@@ -1176,6 +1176,7 @@ class Modify_File(BaseHandler):
             card = Card.objects.get(id=msg.get('key'))
             result = git_utils.modify_file('0',card.package_location,card.branch,card.card_location,content)
             #判断内容是否修改
+            print('#######', content)
             if '0' == result.get('errno'):
                 card.content = content
                 card.create_user = up
@@ -1868,7 +1869,7 @@ class Rename_Package(BaseHandler):
                         dirs.package_location = package.package_location
                         dirs.save()
             """
-            return file_path(self,up)
+            return get_file_path_as_card(self,up)
         except Master_Package.DoesNotExist:
             return self.write_json({'errno':1,'msg':'卡包不存在'})
         except UserProfile.DoesNotExist:
