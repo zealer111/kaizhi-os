@@ -19,7 +19,8 @@ PAGE_LIMIT = 20
 # TODO CHANGE 111.230.234.177 to REAL GIT SERVER
 GIT_API_SERVER = DEV and 'http://127.0.0.1:18088' or 'http://111.230.234.177:18088'
 
-LOG_FILE = DEV and '/tmp/kaizhi3.log' or '/var/log/kaizhi-xcx.log'
+LOG_FILE = DEV and '/tmp/kaizhi3.log' or '/var/log/kaizhi.log'
+LOG_TEACHER_FILE = DEV and '/tmp/kaizhi-teacher3.log' or '/var/log/kaizhi-teacher.log'
 
 #session settings
 SESSION_SAVE_EVERY_REQUEST = True

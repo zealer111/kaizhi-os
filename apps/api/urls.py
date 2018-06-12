@@ -1,7 +1,7 @@
 #coding:utf-8
 from django.conf.urls import url
 
-from .views import views,xcx,basic,auth_code
+from .views import teacher,views,xcx,basic,auth_code
 
 from .youzan import youzan
 
@@ -47,7 +47,8 @@ urlpatterns = [
     url('^modify_file', views.Modify_File.as_view()),
     url('^modify_discuss_file', views.Modify_Discuss_File.as_view()),
     url('^batch_modify_file', views.Batch_Modify_File.as_view()),
-    url('^copy_file', views.Copy_File.as_view()),
+    # 教学中心
+    url('^copy_file', teacher.Copy_File.as_view()),
     url('^commit_hw', views.Commit_Hw.as_view()),
     url('^colse_discuss', views.Colse_Discuss.as_view()),
     url('^delete_card_comment', views.Delete_Card_Comment.as_view()),

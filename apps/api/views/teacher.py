@@ -1,4 +1,3 @@
-
 from apps.backs.views.base_views import BaseHandler
 from apps.api.logger import logger_decorator
 from django.http import HttpResponse
@@ -23,7 +22,7 @@ from libs import log_utils
 from libs import git_utils
 import logging
 
-logging.basicConfig(filename=settings.LOG_FILE, level=logging.DEBUG)
+logging.basicConfig(filename=settings.LOG_TEACHER_FILE, level=logging.DEBUG)
 log_utils.default_logging_config()
 logger = log_utils.getLogger(__name__)
 
@@ -372,6 +371,7 @@ class Modify_Course(BaseHandler):
                     dis_package.create_user = up
                     package_name = course.title +'讨论卡包'
                     result = git_utils.create_git_package(package_name)
+                    result = r.json()
                     if '0' == result.get('errno'):
                         dis_package.package_location = result.get('data')['repo']
                         dis_package.save()
@@ -1592,6 +1592,141 @@ class Batch_Modify_File(BaseHandler):
         except Card.DoesNotExist:
              return self.write_json({'errno':1,'msg':'不存在卡片'})
 
+#教学中心-复制、移动文件
+class Copy_File(BaseHandler):
+    @logger_decorator
+    @auth_decorator
+    @transaction.atomic
+    def post(self,request):
+        msg = json.loads(request.body)
+        copy_key = msg.get('key_list')
+        copy_to_key = msg.get('to_key')
+        _type = msg.get('_type')
+        role = msg.get('role')
+
+        logger.info("Copy_File %s %s" % (_type, copy_to_key))
+        if '0' == _type:
+            try:
+                up = UserProfile.objects.get(username=request.user)
+                package_dir = get_package(self,copy_to_key)
+                if package_dir:
+                    for keys in copy_key:
+                        card = Card.objects.get(id=keys)
+                        _card = Card.objects.filter(pid=package_dir.id,file_name=card.file_name)
+                        if _card:
+                           return self.write_json({'errno':'1','msg':'文件已存在'})
+                        cp_card = Card()
+                        cp_card.package_id = package_dir.id
+                        cp_card.branch = package_dir.branch
+                        cp_card.package_location = package_dir.package_location
+                        cp_card.file_name = card.file_name
+                        cp_card.c_type = 1
+                        cp_card.tags = card.tags
+                        #cp_card.content = card.content
+                        cp_card.create_user = up
+                        cp_card.pid = package_dir.id
+                        result = git_utils.copy_file('0',package_dir.package_location,package_dir.package_location
+                                                        ,cp_card.branch,card.card_location)
+                        cp_card.card_location = os.path.join(package_dir.package_location,card.file_name)
+                        cp_card.save()
+                    return get_file_dir(self,role,up)
+                else:
+                    for keys in copy_key:
+                        try:
+                            card_dir = Card.objects.get(id=copy_to_key)
+                            card = Card.objects.get(id=keys)
+
+                            _card = Card.objects.filter(pid=card_dir.id,file_name=card.file_name)
+                            if _card:
+                                return self.write_json({'errno':'1','msg':'文件已存在'})
+
+                            cp_card = Card()
+                            cp_card.package_id = card_dir.package_id
+                            cp_card.branch = card_dir.branch
+                            cp_card.package_location = card_dir.package_location
+                            cp_card.file_name = card.file_name
+                            cp_card.c_type = 1
+                            cp_card.tags = card.tags
+                            #cp_card.content = card.content
+                            cp_card.create_user = up
+                            cp_card.pid = card_dir.id
+                            result = git_utils.copy_file('0',card_dir.package_location,card_dir.card_location,cp_card.branch,
+                                                           card.card_location)
+                            cp_card.card_location = os.path.join(card_dir.card_location,card.file_name)
+                            cp_card.save()
+                        except Card.DoesNotExist:
+                            return self.write_json({'errno':1,'msg':'卡片不存在'})
+
+
+                return get_file_dir(self,role,up)
+            except Card.DoesNotExist:
+                return self.write_json({'errno':1,'msg':'卡片不存在'})
+        elif '1' == _type:
+            try:
+                up = UserProfile.objects.get(username=request.user)
+                package_dir = get_package(self,copy_to_key)
+                if package_dir:
+                    for keys in copy_key:
+                        card = Card.objects.get(id=keys)
+
+                        #logger.debug("copy to %s" % (card.car_location))
+                        #if git_same_card_number(card.car_location)>1:
+                        #    return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，无法移动'})
+
+                        _card = Card.objects.filter(pid=package_dir.id,file_name=card.file_name)
+                        if _card:
+                           return self.write_json({'errno':'1','msg':'文件已存在'})
+                        cp_card = Card()
+                        cp_card.package_id = package_dir.id
+                        cp_card.branch = package_dir.branch
+                        cp_card.package_location = package_dir.package_location
+                        cp_card.file_name = card.file_name
+                        cp_card.c_type = 1
+                        cp_card.tags = card.tags
+                        #cp_card.content = card.content
+                        cp_card.create_user = up
+                        cp_card.pid = package_dir.id
+                        result = git_utils.copy_file('1',package_dir.package_location,package_dir.package_location
+                                                        ,cp_card.branch,card.card_location)
+                        cp_card.card_location = os.path.join(package_dir.package_location,card.file_name)
+                        cp_card.save()
+                        card.delete()
+                    return get_file_dir(self,role,up)
+
+                else:
+                    for keys in copy_key:
+                        try:
+                            card_dir = Card.objects.get(id=copy_to_key)
+                            card = Card.objects.get(id=keys)
+
+                            logger.debug("copy to %s" % (card.card_location))
+                            if git_same_card_number(card.card_location)>1:
+                                return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，无法移动'})
+
+                        except Card.DoesNotExist:
+                            return self.write_json({'errno':'1','msg':'文件不存在'})
+
+                        _card = Card.objects.filter(pid=card_dir.id,file_name=card.file_name)
+                        if _card:
+                            return self.write_json({'errno':'1','msg':'文件已存在'})
+                        cp_card = Card()
+                        cp_card.package_id = card_dir.package_id
+                        cp_card.branch = card_dir.branch
+                        cp_card.package_location = card_dir.package_location
+                        cp_card.file_name = card.file_name
+                        cp_card.c_type = 1
+                        cp_card.tags = card.tags
+                        #cp_card.content = card.content
+                        cp_card.create_user = up
+                        cp_card.pid = card_dir.id
+                        result = git_utils.copy_file('0',card_dir.package_location,card_dir.card_location,cp_card.branch,
+                                                       card.card_location)
+                        cp_card.card_location = os.path.join(card_dir.card_location,card.file_name)
+                        cp_card.save()
+                        card.delete()
+                return get_file_dir(self,role,up)
+            except Card.DoesNotExist:
+                return self.write_json({'errno':1,'msg':'卡片不存在'})
 
 #教学中心-文件重命名
 class Rename_File(BaseHandler):
@@ -3304,3 +3439,4 @@ class Test(BaseHandler):
     def get(self,request):
         re_init_cards_by_package('999999','/data/www/vhosts/kaizhi-git-server/repos/xiaoweizxcvbnm写作课五期', 'master')
         return self.write_json({'errno':0,'msg':'sucess'})
+
