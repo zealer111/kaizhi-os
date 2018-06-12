@@ -57,7 +57,7 @@ urlpatterns = [
     url('^card_collect', views.Card_Collect.as_view()),
     url('^card_search', views.Card_Search.as_view()),
     url('^cancel_collect', views.Cancel_Collect.as_view()),
-    url('^upload_zip', views.Upload_Zip.as_view()),
+    url('^upload_zip', teacher.Upload_Zip.as_view()),
     url('^file_diff', teacher.File_Diff.as_view()),
     url('^homework_page', views.Homework_Page.as_view()),
     url('^discuss_page', views.Discuss_Page.as_view()),
