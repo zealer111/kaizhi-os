@@ -1298,7 +1298,7 @@ class Comment_Page(BaseHandler):
                     'is_my_comment':is_my_comment,
                     'user':cs.user.username,
                     'head_img':cs.user.head_img,
-                    #'content':cs.content, ## FIXME: get card's content
+                    'content':cs.content, ## FIXME: get card's content
                     'create_time':str(cs.create_time)[19:]
                 })
             p = Paginator(data,count)

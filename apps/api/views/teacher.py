@@ -45,12 +45,14 @@ def re_init_cards_by_package(package_id, package_dir, branch):
 # 检测对应的文件是否在其他分支里有
 ##########################################
 
+class GistFileTaken(Exception):
+    pass
+
 def git_same_card_number(card_location):
     cards = Card.objects.filter(card_location=card_location)
     count = len(cards)
     logger.info("git_same_card_number:%s %s" % (card_location, count))
     return count
-
 
 
 ##########################################
@@ -110,6 +112,28 @@ def if_package_name_taken(self, package_name, user):
         return self.write_json({'errno':1,'msg':'该卡包名称已被占用'})
     else:
         return False
+
+##########################################
+# 卡包目录中的资源是否有第三方使用
+##########################################
+
+def if_package_dir_taken(self, level, package_id, path):
+    logger.debug("if_package_dir_taken:%s" % (package_id, path))
+    cards = Card.object.filter(package_id=package_id, card_location=key)
+    if len(cards)==0:
+        return self.write_json({'errno':1006,'msg':'卡包文件夹不存在'})
+    else:
+        card = cards[0]
+        if card.c_type == settings.GIT_TYPE_DIR:
+            cards = Card.object.filter(pid=card.id)
+            for c in cards:
+                return if_package_dir_taken(c.package_id,c.card_location)
+        else:
+            num = git_same_card_number(card.card_location)
+            if num>level: # 已有其他地方使用
+                logger.debug("if_package_dir_taken:%s:%s" % (card.card_location, num))
+                raise GistFileTaken("%s:%s" % (card.card_location, num))
+
 
 #教学中心-创建课程
 
@@ -1612,6 +1636,18 @@ class Rename_File(BaseHandler):
 
             if 0 == card.c_type:
                 new_name = file_name
+
+                try: # 源目标文件已经大于1
+                    if_package_dir_taken(1, card.package_id, card.card_location)
+                except GistFileTaken as e:
+                    return self.write_json({'errno':101,'msg':'目标文件夹中已有文件正在被其他人使用'})
+
+
+                try: # 新的目标文件已经大于0
+                    if_package_dir_taken(0, card.package_id, os.path.join(os.path.dirname(card.card_location),new_name))
+                except GistFileTaken as e:
+                    return self.write_json({'errno':101,'msg':'其他用户已占用目录中的文件名，请更换'})
+
                 result = git_utils.rename_file('0',card.package_location,card.branch,card.card_location,'',card.file_name,new_name)
                 card.file_name = new_name
                 card.card_location = result.get('data')['repo']

@@ -156,6 +156,7 @@ def get_file_paths_as_package(self,key,up,return_json=True):
         answer = User_Hw_Record.objects.filter(card=cards,user=up)
         for an in answer:
             count = Card_Comment.objects.filter(card=an.aw_card).count()
+            print(count)
         da = {
         'file':cards.file_name,
         'id':cards.id,
