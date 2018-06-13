@@ -1556,13 +1556,21 @@ class Copy_File(BaseHandler):
                     for keys in copy_key:
                         card = Card.objects.get(id=keys)
 
+                        new_path = os.path.join(package_dir.package_location,card.file_name)
+
                         #logger.debug("copy to %s" % (card.car_location))
-                        #if git_same_card_number(card.car_location)>1:
-                        #    return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，无法移动'})
+                        if git_same_card_number(card.card_location)>1:
+                            return self.write_json({'errno':101,'msg':'此文件正被其他人使用，无法移动'})
+
 
                         _card = Card.objects.filter(pid=package_dir.id,file_name=card.file_name)
                         if _card:
-                           return self.write_json({'errno':'1','msg':'文件已存在'})
+                           return self.write_json({'errno':'1','msg':'目标文件已存在'})
+
+                        #if git_same_card_number(new_path)>0:
+                        #    return self.write_json({'errno':101,'msg':'其他用户已占用文件名，无法移动'})
+
+
                         cp_card = Card()
                         cp_card.package_id = package_dir.id
                         cp_card.branch = package_dir.branch
@@ -1575,7 +1583,7 @@ class Copy_File(BaseHandler):
                         cp_card.pid = package_dir.id
                         result = git_utils.copy_file('1',package_dir.package_location,package_dir.package_location
                                                         ,cp_card.branch,card.card_location)
-                        cp_card.card_location = os.path.join(package_dir.package_location,card.file_name)
+                        cp_card.card_location = new_path
                         cp_card.save()
                         card.delete()
                     return get_file_dir(self,role,up)
