@@ -21,7 +21,7 @@ from apps import settings
 import operator
 from libs import log_utils
 from libs import git_utils
-from libs import utls
+from libs import utils
 import logging
 
 logging.basicConfig(filename=settings.LOG_FILE, level=logging.DEBUG)
