@@ -1709,6 +1709,7 @@ class Comment_Detail(BaseHandler):
                     is_my_comment = 0
                 data.append({
                     'id':cards.id,
+                    'is_my_comment':is_my_comment,
                     'user':cards.user.username,
                     'head_img':cards.user.head_img,
                     'content':cards.content,

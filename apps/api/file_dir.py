@@ -468,7 +468,7 @@ def verify_content(self,content):
     except BaseException:
          return self.write_json({'errno': 1, 'msg': '文件格式错误!!!'})
 
-def get_file_dir(self,role,up):        
+def get_file_dir(self,role,up):
     if settings.GIT_ROLE_MASTER == role:
         path = get_file_path_as_card(self,up)
     elif  settings.GIT_ROLE_BRANCH  == role:

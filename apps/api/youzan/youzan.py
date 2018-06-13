@@ -131,7 +131,10 @@ class Buy_Course_Info(BaseHandler):
         try:
             data = {}
             up = UserProfile.objects.get(username=request.user)
-            course = Course.objects.get(short_url=msg.get('short_url'))
+            if '0' == msg.get('type'):
+                course = Course.objects.get(id=msg.get('course_id'))
+            if '1' == msg.get('type'):
+                course = Course.objects.get(short_url=msg.get('short_url'))
             ubr = User_Buy_Record.objects.filter(course=course,user=up)
             if not ubr:
                 data = {

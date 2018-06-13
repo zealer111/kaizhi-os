@@ -129,11 +129,12 @@ class AuthPhone(BaseHandler):
         try:
             ac = AuthCode.objects.get(phone=phone, auth_code=authcode)
             user = UserProfile.objects.get(phone=phone)
-            return self.write_json({'errno': 0, 'msg': '', 'data': {
+            return self.write_json({'errno': 0, 'msg': 'success', 'data': {
                     "exist_status": "y",
                     "userInfo":{
                         'avatar': user.head_img,
                         'nickname': user.nickname,
+                        'phone': user.phone,
                     }
                 }
             })
@@ -146,6 +147,20 @@ class AuthPhone(BaseHandler):
 class SetPassword(BaseHandler):
     """
     设置密码
+
+    parameters {
+        phone: 'string',    #手机号
+        password: 'string', #密码
+        openId: 'string',   #
+    }
+
+    return {
+        errno: 0/1,
+        msg: "string",
+        data {
+            userId: 'string'
+        }
+    }
     """
     def post(self, request):
         msg = json.loads(request.body)

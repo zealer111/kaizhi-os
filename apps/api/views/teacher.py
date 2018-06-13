@@ -880,9 +880,9 @@ class Create_File(BaseHandler):
                     folder_id = folder.id
                     path = os.path.join(folder.card_location,folder_name)
                 logger.debug("PARAM: %s %s %s %s %s" % (str(folder_location), str(package_id), str(folder_branch), str(folder_id), str(path)))
-                #
-                #if if_card_used_by_others(path)>0:
-                #    return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
+
+                if if_card_used_by_others(path):
+                    return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
 
                 card = Card()
                 card.package_id = package_id
@@ -986,9 +986,9 @@ class Create_File(BaseHandler):
                 cards.save()
                 return get_file_dir(self,role,up)
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'用户不存在！！！'})
+            return self.write_json({'errno':1,'msg':'用户不存在'})
         except Card.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'卡片不存在！！！'})
+            return self.write_json({'errno':1,'msg':'卡片不存在'})
 
 #学习中心-创建讨论卡片
 class Create_Discuss_File(BaseHandler):
@@ -1512,7 +1512,7 @@ class Copy_File(BaseHandler):
         role = msg.get('role')
 
         logger.info("Copy_File %s %s" % (_type, copy_to_key))
-        if '0' == _type:
+        if settings.GIT_TYPE_COPY == _type:
             try:
                 up = UserProfile.objects.get(username=request.user)
                 package_dir = get_package(self,copy_to_key)
@@ -1522,6 +1522,11 @@ class Copy_File(BaseHandler):
                         _card = Card.objects.filter(pid=package_dir.id,file_name=card.file_name)
                         if _card:
                            return self.write_json({'errno':'1','msg':'文件已存在'})
+
+                        new_path = os.path.join(package_dir.package_location,card.file_name)
+                        if if_card_used_by_others(new_path):
+                            return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
+
                         cp_card = Card()
                         cp_card.package_id = package_dir.id
                         cp_card.branch = package_dir.branch
@@ -1534,7 +1539,7 @@ class Copy_File(BaseHandler):
                         cp_card.pid = package_dir.id
                         result = git_utils.copy_file('0',package_dir.package_location,package_dir.package_location
                                                         ,cp_card.branch,card.card_location)
-                        cp_card.card_location = os.path.join(package_dir.package_location,card.file_name)
+                        cp_card.card_location = new_path
                         cp_card.save()
                     return get_file_dir(self,role,up)
                 else:
@@ -1568,7 +1573,7 @@ class Copy_File(BaseHandler):
                 return get_file_dir(self,role,up)
             except Card.DoesNotExist:
                 return self.write_json({'errno':1,'msg':'卡片不存在'})
-        elif '1' == _type:
+        elif settings.GIT_TYPE_MOVE  == _type:
             try:
                 up = UserProfile.objects.get(username=request.user)
                 package_dir = get_package(self,copy_to_key)
@@ -1582,14 +1587,12 @@ class Copy_File(BaseHandler):
                         if if_card_duplicated(card.card_location):
                             return self.write_json({'errno':101,'msg':'此文件正被其他人使用，无法移动'})
 
-
                         _card = Card.objects.filter(pid=package_dir.id,file_name=card.file_name)
                         if _card:
-                           return self.write_json({'errno':'1','msg':'目标文件已存在'})
+                            return self.write_json({'errno':'1','msg':'目标文件已存在'})
 
-                        #if if_card_used_by_others(new_path)>0:
-                        #    return self.write_json({'errno':101,'msg':'其他用户已占用文件名，无法移动'})
-
+                        if if_card_used_by_others(new_path):
+                            return self.write_json({'errno':101,'msg':'其他用户已占用文件名，无法移动'})
 
                         cp_card = Card()
                         cp_card.package_id = package_dir.id
@@ -1616,7 +1619,7 @@ class Copy_File(BaseHandler):
 
                             logger.debug("copy to %s" % (card.card_location))
                             if if_card_duplicated(card.card_location):
-                                return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，无法移动'})
+                                return self.write_json({'errno':101,'msg':'其他用户正在操作中，无法移动'})
 
                         except Card.DoesNotExist:
                             return self.write_json({'errno':'1','msg':'文件不存在'})
@@ -1624,6 +1627,11 @@ class Copy_File(BaseHandler):
                         _card = Card.objects.filter(pid=card_dir.id,file_name=card.file_name)
                         if _card:
                             return self.write_json({'errno':'1','msg':'文件已存在'})
+
+                        new_path = os.path.join(card_dir.card_location,card.file_name)
+                        if if_card_used_by_others(new_path):
+                            return self.write_json({'errno':101,'msg':'其他用户已占用文件名，无法移动'})
+
                         cp_card = Card()
                         cp_card.package_id = card_dir.package_id
                         cp_card.branch = card_dir.branch
@@ -1636,7 +1644,7 @@ class Copy_File(BaseHandler):
                         cp_card.pid = card_dir.id
                         result = git_utils.copy_file('0',card_dir.package_location,card_dir.card_location,cp_card.branch,
                                                        card.card_location)
-                        cp_card.card_location = os.path.join(card_dir.card_location,card.file_name)
+                        cp_card.card_location = new_path
                         cp_card.save()
                         card.delete()
                 return get_file_dir(self,role,up)
@@ -1662,19 +1670,20 @@ class Rename_File(BaseHandler):
 
             #TODO: 遍历每一个文件，分别检查源和目标文件
 
-            if 0 == card.c_type:
+            if settings.GIT_TYPE_DIR == card.c_type:
                 new_name = file_name
 
                 try: # 源目标文件已经大于1
                     if_package_dir_duplicated(self, card.package_id, card.card_location)
                 except SameFileCheck as e:
-                    return self.write_json({'errno':101,'msg':'目标文件夹中已有文件正在被其他人使用'})
+                    return self.write_json({'errno':101,'msg':'其他用户正在操作中，无法重命名'})
 
 
-                try: # 新的目标文件已经大于0
-                    if_package_dir_used_by_others(self, card.package_id, os.path.join(os.path.dirname(card.card_location),new_name))
+                try:
+                    new_path = os.path.join(os.path.dirname(card.card_location),new_name)
+                    if_package_dir_used_by_others(self, card.package_id, )
                 except SameFileCheck as e:
-                    return self.write_json({'errno':101,'msg':'其他用户已占用目录中的文件名，请更换'})
+                    return self.write_json({'errno':101,'msg':'其他用户正在操作中，无法重命名'})
 
                 result = git_utils.rename_file('0',card.package_location,card.branch,card.card_location,'',card.file_name,new_name)
                 card.file_name = new_name
@@ -1687,7 +1696,7 @@ class Rename_File(BaseHandler):
                     dirs.save()
                 card.save()
                 return get_file_dir(self,role,up)
-            elif 1 == card.c_type:
+            elif settings.GIT_TYPE_FILE == card.c_type:
                 folder_dir = Card.objects.get(id=card.pid)
                 if  0 == card.tags:
                     c = Card.objects.filter(~Q(file_name=card.file_name),pid=folder_dir.id,file_name=file_name +'.md')
@@ -1708,11 +1717,11 @@ class Rename_File(BaseHandler):
                 # 检查目标文件
                 new_path = os.path.join(folder_dir.card_location, new_name)
                 if if_card_used_by_others(new_path):
-                    return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
+                    return self.write_json({'errno':101,'msg':'其他用户正在操作中，无法重命名'})
 
                 # 检查源文件
-                if if_card_duplicated(card.card_location)>1:
-                    return self.write_json({'errno':settings.ERR_FILE_USED,'msg':'有文件其他用户正在操作，无法重命名'})
+                if if_card_duplicated(card.card_location):
+                    return self.write_json({'errno':settings.ERR_FILE_USED,'msg':'其他用户正在操作中，无法重命名'})
 
                 result = git_utils.rename_file('1',card.package_location,card.branch,card.card_location,
                                                 folder_dir.card_location,card.file_name,new_name)
@@ -1722,7 +1731,8 @@ class Rename_File(BaseHandler):
                 return get_file_dir(self,role,up)
             return self.write_json({'errno':0,'msg':'修改成功'})
         except Card.DoesNotExist:
-            folder_dir = get_package(self,card.pid)
+            return self.write_json({'errno':1,'msg':'重命名卡片不存在'})
+            """folder_dir = get_package(self,card.pid)
             if folder_dir:
                 if  0 == card.tags:
                     c = Card.objects.filter(~Q(file_name=card.file_name),pid=folder_dir.id,file_name=file_name +'.md')
@@ -1747,6 +1757,7 @@ class Rename_File(BaseHandler):
             card.card_location = result['data'].get('repo')
             card.save()
             return get_file_dir(self,role,up)
+            """
 
 
 #教学中心-卡包重命名
