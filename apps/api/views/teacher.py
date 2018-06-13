@@ -40,12 +40,18 @@ def re_init_cards_by_package(package_id, package_dir, branch):
         for filename in filenames:
             logger.debug("file(%s) - %s" % (parent, filename))
 
+"""
+class Test(BaseHandler):
+    def get(self,request):
+        re_init_cards_by_package('999999','/data/www/vhosts/kaizhi-git-server/repos/xiaoweizxcvbnm写作课五期', 'master')
+        return self.write_json({'errno':0,'msg':'sucess'})
+"""
 
 ##########################################
 # 检测对应的文件是否在其他分支里有
 ##########################################
 
-class GistFileTaken(Exception):
+class SameFileCheck(Exception):
     pass
 
 def git_same_card_number(card_location):
@@ -53,7 +59,6 @@ def git_same_card_number(card_location):
     count = len(cards)
     logger.info("git_same_card_number:%s %s" % (card_location, count))
     return count
-
 
 ##########################################
 # Get PID from cards
@@ -80,8 +85,8 @@ def delete_file(self, key, user,role):
         logger.debug("delete file: %s %s %s" % (card.branch,card.package_location,card.card_location))
         if settings.GIT_TYPE_FILE  == card.c_type:
 
-            if git_same_card_number(card.card_location)>1: # 该文件已经被占用
-                return self.write_json({'errno':settings.ERR_FILE_USED,'msg':'其他用户正在操作，无法删除'})
+            if if_card_duplicated(card.card_location): # 该文件已经被占用
+                return self.write_json({'errno':settings.ERR_FILE_USED,'msg':'其他用户正在操作中，无法删除'})
             else:
                 result = git_utils.delete_file(card.package_location,card.branch,card.card_location)
                 card.delete()
@@ -90,8 +95,8 @@ def delete_file(self, key, user,role):
             c = Card.objects.filter(pid=card.id)
             logger.debug("delete file dir: %s %s %s" % (card.branch,card.package_location,card.card_location))
             for cs in c:
-                if git_same_card_number(cs.card_location)>1: # 有文件已经被占用
-                    return self.write_json({'errno':settings.ERR_FILE_USED,'msg':'有文件其他用户正在操作，无法删除'})
+                if if_card_duplicated(cs.card_location): # 有文件出现在两个地方
+                    return self.write_json({'errno':settings.ERR_FILE_USED,'msg':'其他用户正在操作中，无法删除'})
 
             for cs in c:
                 cs.delete()
@@ -100,6 +105,15 @@ def delete_file(self, key, user,role):
             return get_file_dir(self,role,up)
     except Card.DoesNotExist:
         return self.write_json({'errno':1,'msg':'文件不存在'})
+
+##########################################
+# 卡是否被其他地方使用 / 重复(2个地方使用)
+##########################################
+def if_card_used_by_others(path):
+    return git_same_card_number(path)>0
+
+def if_card_duplicated(path):
+    return git_same_card_number(path)>1
 
 
 ##########################################
@@ -117,7 +131,13 @@ def if_package_name_taken(self, package_name, user):
 # 卡包目录中的资源是否有第三方使用
 ##########################################
 
-def if_package_dir_taken(self, level, package_id, path):
+def if_package_dir_duplicated(self, package_id, path):
+    return _package_dir_taken(self, 1, package_id, path)
+
+def if_package_dir_used_by_others(self, package_id, path):
+    return _package_dir_taken(self, 0, package_id, path)
+
+def _package_dir_taken(self, level, package_id, path):
     logger.debug("if_package_dir_taken:%s" % (package_id, path))
     cards = Card.object.filter(package_id=package_id, card_location=key)
     if len(cards)==0:
@@ -132,7 +152,7 @@ def if_package_dir_taken(self, level, package_id, path):
             num = git_same_card_number(card.card_location)
             if num>level: # 已有其他地方使用
                 logger.debug("if_package_dir_taken:%s:%s" % (card.card_location, num))
-                raise GistFileTaken("%s:%s" % (card.card_location, num))
+                raise SameFileCheck("%s:%s" % (card.card_location, num))
 
 
 #教学中心-创建课程
@@ -861,7 +881,7 @@ class Create_File(BaseHandler):
                     path = os.path.join(folder.card_location,folder_name)
                 logger.debug("PARAM: %s %s %s %s %s" % (str(folder_location), str(package_id), str(folder_branch), str(folder_id), str(path)))
                 #
-                #if git_same_card_number(package_id,path)>0:
+                #if if_card_used_by_others(path)>0:
                 #    return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
 
                 card = Card()
@@ -948,7 +968,7 @@ class Create_File(BaseHandler):
                     pid = folder.id
                     path = os.path.join(folder.card_location,file_name)
 
-                if git_same_card_number(path)>0:
+                if if_card_used_by_others(path):
                     return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
 
                 cards = Card()
@@ -1559,7 +1579,7 @@ class Copy_File(BaseHandler):
                         new_path = os.path.join(package_dir.package_location,card.file_name)
 
                         #logger.debug("copy to %s" % (card.car_location))
-                        if git_same_card_number(card.card_location)>1:
+                        if if_card_duplicated(card.card_location):
                             return self.write_json({'errno':101,'msg':'此文件正被其他人使用，无法移动'})
 
 
@@ -1567,7 +1587,7 @@ class Copy_File(BaseHandler):
                         if _card:
                            return self.write_json({'errno':'1','msg':'目标文件已存在'})
 
-                        #if git_same_card_number(new_path)>0:
+                        #if if_card_used_by_others(new_path)>0:
                         #    return self.write_json({'errno':101,'msg':'其他用户已占用文件名，无法移动'})
 
 
@@ -1595,7 +1615,7 @@ class Copy_File(BaseHandler):
                             card = Card.objects.get(id=keys)
 
                             logger.debug("copy to %s" % (card.card_location))
-                            if git_same_card_number(card.card_location)>1:
+                            if if_card_duplicated(card.card_location):
                                 return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，无法移动'})
 
                         except Card.DoesNotExist:
@@ -1646,14 +1666,14 @@ class Rename_File(BaseHandler):
                 new_name = file_name
 
                 try: # 源目标文件已经大于1
-                    if_package_dir_taken(1, card.package_id, card.card_location)
-                except GistFileTaken as e:
+                    if_package_dir_duplicated(self, card.package_id, card.card_location)
+                except SameFileCheck as e:
                     return self.write_json({'errno':101,'msg':'目标文件夹中已有文件正在被其他人使用'})
 
 
                 try: # 新的目标文件已经大于0
-                    if_package_dir_taken(0, card.package_id, os.path.join(os.path.dirname(card.card_location),new_name))
-                except GistFileTaken as e:
+                    if_package_dir_used_by_others(self, card.package_id, os.path.join(os.path.dirname(card.card_location),new_name))
+                except SameFileCheck as e:
                     return self.write_json({'errno':101,'msg':'其他用户已占用目录中的文件名，请更换'})
 
                 result = git_utils.rename_file('0',card.package_location,card.branch,card.card_location,'',card.file_name,new_name)
@@ -1687,11 +1707,11 @@ class Rename_File(BaseHandler):
 
                 # 检查目标文件
                 new_path = os.path.join(folder_dir.card_location, new_name)
-                if git_same_card_number(new_path)>0:
+                if if_card_used_by_others(new_path):
                     return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
 
                 # 检查源文件
-                if git_same_card_number(card.card_location)>1:
+                if if_card_duplicated(card.card_location)>1:
                     return self.write_json({'errno':settings.ERR_FILE_USED,'msg':'有文件其他用户正在操作，无法重命名'})
 
                 result = git_utils.rename_file('1',card.package_location,card.branch,card.card_location,
@@ -3313,11 +3333,3 @@ class Upload_Zip(BaseHandler):
             return self.write_json(file_dir)
         except UserProfile.DoesNotExist:
             return self.write_json({'errno':1,'msg':'用户不存在'})
-
-
-class Test(BaseHandler):
-
-    def get(self,request):
-        re_init_cards_by_package('999999','/data/www/vhosts/kaizhi-git-server/repos/xiaoweizxcvbnm写作课五期', 'master')
-        return self.write_json({'errno':0,'msg':'sucess'})
-

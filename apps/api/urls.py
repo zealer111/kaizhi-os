@@ -76,7 +76,7 @@ urlpatterns = [
     url('^recover_file', views.Recover_File.as_view()),
     url('^delete_some_file', views.Delete_Some_File.as_view()),
     url('^banners', views.Banners.as_view()),
-    url('^test', teacher.Test.as_view()),
+    #url('^test', teacher.Test.as_view()),
 ]
 
 urlpatterns +=[
