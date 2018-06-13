@@ -20,6 +20,7 @@ from apps import settings
 import operator
 from libs import log_utils
 from libs import git_utils
+from libs import utils
 import logging
 
 logging.basicConfig(filename=settings.LOG_TEACHER_FILE, level=logging.DEBUG)
@@ -98,87 +99,19 @@ def delete_file(self, key, user,role):
     except Card.DoesNotExist:
         return self.write_json({'errno':1,'msg':'文件不存在'})
 
+
+##########################################
+# 卡包名是否被占用
+##########################################
+
+def if_package_name_taken(self, package_name, user):
+    package = Master_Package.objects.filter(package_name=package_name,create_user=user)
+    if package:
+        return self.write_json({'errno':1,'msg':'该卡包名称已被占用'})
+    else:
+        return False
+
 #教学中心-创建课程
-class Create_Course(BaseHandler):
-    @logger_decorator
-    @auth_decorator
-    @transaction.atomic
-    def post(self, request):
-        course = json.loads(request.body)
-        cover = course.get('cover')
-        title = course.get('title')
-        subtitle = course.get('subtitle')
-        issue = course.get('issue')
-        description = course.get('description')
-        is_fee = course.get('is_fee')
-        price = course.get('price')
-        price_url = course.get('price_url')
-        short_url = course.get('short_url')
-        url = Course.objects.filter(short_url=short_url)
-        if url:
-           return self.write_json({'errno': 1, 'msg': '该短连接已存在'})
-        is_discuss = course.get('is_discuss')
-        is_graduate = course.get('is_graduate')
-        host = course.get('host')
-        classify = course.get('classify')
-        start_time = course.get('start_time')
-        end_time = course.get('end_time')
-        course_package = course.get('coursePackage')
-        homework_package = course.get('homeworkPackage')
-        up = UserProfile.objects.get(username=request.user)
-        course = Course.objects.filter(title=title)
-        if course:
-           return self.write_json({'errno': 1, 'msg': '该课程已存在'})
-        course = Course()
-        course.cover = cover
-        course.title = title
-        course.subtitle = subtitle
-        course.issue = issue
-        course.description = description
-        course.is_fee = is_fee
-        course.create_user = up
-        course.price = price
-        course.price_url = price_url
-        course.short_url = short_url
-        course.is_discuss = is_discuss
-        course.is_graduate = is_graduate
-        course.host = host
-        course.classify = classify
-        course.start_time = start_time
-        course.end_time = end_time
-        course.save()
-        if 1 == is_discuss:
-            dis_package = Master_Package()
-            dis_package.course = course
-            dis_package.package_name = title +'讨论卡包'
-            dis_package.p_type = 2
-            dis_package.create_user = up
-            package_name = title +'讨论卡包'
-            result = git_utils.create_git_package(package_name)
-            if '0' == result.get('errno'):
-                dis_package.package_location = result.get('data')['repo']
-                dis_package.save()
-        if course_package:
-            try:
-                package = Master_Package.objects.get(id=course_package)
-                package.course = course
-                package.p_type = 0
-                package.create_user = up
-                package.save()
-            except Package.DoesNotExist:
-                return self.write_json({'errno':'1','msg':'卡包不存在'})
-        if homework_package:
-            try:
-                package = Master_Package.objects.get(id=homework_package)
-                package.course = course
-                package.p_type = 1
-                package.create_user = up
-                package.save()
-                course.is_homework = 1
-                course.save()
-            except Master_Package.DoesNotExist:
-                return self.write_json({'errno':'1','msg':'卡包不存在'})
-        return self.write_json({'errno': 0, 'msg': 'success'})
 
 #获取课程
 class Get_Course(BaseHandler):
@@ -333,78 +266,6 @@ class Delete_Course(BaseHandler):
             return self.write_json({'errno':1, 'msg': '暂无数据','data':data})
 
 #教学中心-编辑课程
-class Modify_Course(BaseHandler):
-    @logger_decorator
-    @auth_decorator
-    def post(self, request):
-        msg = json.loads(request.body)
-        try:
-            course = Course.objects.get(id=msg.get('course_id'))
-            package = Course.objects.get(id=msg.get('course_id')).master_course.all()
-            course.title = msg.get('title')
-            course.description = msg.get('description')
-            course.host = msg.get('host')
-            course.subtitle = msg.get('subtitle')
-            course.classify = msg.get('classify')
-            course.price = msg.get('price')
-            course.cover = msg.get('cover')
-            course.price_url = msg.get('price_url')
-            url = Course.objects.filter(~Q(short_url=course.short_url),short_url=msg.get('short_url'))
-            if url:
-                return self.write_json({'errno': 1, 'msg': '该短链接已存在'})
-            course.short_url = msg.get('short_url')
-            course.start_time = msg.get('start_time')
-            course.is_fee = msg.get('is_fee')
-            course.is_discuss = msg.get('is_discuss')
-            course.end_time = msg.get('end_time')
-            course_package = msg.get('coursePackage')
-            homework_package = msg.get('homeworkPackage')
-            up = UserProfile.objects.get(username=request.user)
-            course.save()
-            if 1 == msg.get('is_discuss'):
-                dis = Master_Package.objects.filter(create_user=up,course=course,p_type=2)
-                if not dis:
-                    dis_package = Master_Package()
-                    dis_package.course = course
-                    dis_package.package_name = course.title +'讨论卡包'
-                    dis_package.p_type = 2
-                    dis_package.create_user = up
-                    package_name = course.title +'讨论卡包'
-                    result = git_utils.create_git_package(package_name)
-                    result = r.json()
-                    if '0' == result.get('errno'):
-                        dis_package.package_location = result.get('data')['repo']
-                        dis_package.save()
-
-            if course_package:
-                try:
-                    package = Master_Package.objects.get(id=course_package)
-                    package.course = course
-                    package.p_type = 0
-                    package.create_user = up
-                    package.save()
-                except Master_Package.DoesNotExist:
-                    return self.write_json({'errno':'1','msg':'卡包不存在'})
-
-            if homework_package:
-                try:
-                    package = Master_Package.objects.get(id=homework_package)
-                    package.course = course
-                    package.p_type = 1
-                    package.create_user = up
-                    package.save()
-                    course.is_homework = 1
-                    course.save()
-
-                except Master_Package.DoesNotExist:
-                    return self.write_json({'errno':'1','msg':'卡包不存在'})
-
-            if not homework_package:
-                course.is_homework = 0
-                course.save()
-            return self.write_json({'errno': 0, 'msg': 'success'})
-        except Course.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '不存在课程信息'})
 
 #获取单个课程详情
 class Course_Detail(BaseHandler):
@@ -1162,6 +1023,7 @@ class Delete_File(BaseHandler):
             r = delete_file(self,key,up,role)
         return r
 
+
 #教学中心-编辑文件
 class Modify_File(BaseHandler):
     @logger_decorator
@@ -1822,6 +1684,7 @@ class Rename_File(BaseHandler):
             card.save()
             return get_file_dir(self,role,up)
 
+
 #教学中心-卡包重命名
 class Rename_Package(BaseHandler):
     @logger_decorator
@@ -1832,43 +1695,15 @@ class Rename_Package(BaseHandler):
         msg = json.loads(request.body)
         try:
             up = UserProfile.objects.get(username=request.user)
+            package_name = msg.get('package_name')
+
+            tmp = if_package_name_taken(self, package_name, up)
+            if tmp: return tmp
+
             package = Master_Package.objects.get(id=msg.get('key'))
-
-            """
-            #FIXME
-            data = {
-              'branch':package.branch,
-              'dirname':up.username + package.package_name,
-              'path':package.package_location,
-              'new_dirname':up.username + msg.get('package_name')
-             }
-            url = settings.GIT_RENAME_REPO
-            r = requests.post(url,data=data)
-            result = r.json()
-            """
-
-            package.package_name = msg.get('package_name')
+            package.package_name = package_name
             package.save()
-            """
-                _dir = Card.objects.filter(pid=package.id)
-                for dirs in _dir:
-                    if 0 == dirs.c_type:
-                        dir_path = os.path.join(package.package_location,dirs.file_name)
-                        dirs.card_location = dir_path
-                        dirs.package_location = package.package_location
-                        dirs.save()
-                        card_dir = Card.objects.filter(pid=dirs.id)
-                        for cards in card_dir:
-                            card_path = os.path.join(dirs.card_location,cards.file_name)
-                            cards.card_location = card_path
-                            cards.package_location = package.package_location
-                            cards.save()
-                    elif 1 == dirs.c_type:
-                        dir_path = os.path.join(package.package_location,dirs.file_name)
-                        dirs.card_location = dir_path
-                        dirs.package_location = package.package_location
-                        dirs.save()
-            """
+            
             return get_file_path_as_card(self,up)
         except Master_Package.DoesNotExist:
             return self.write_json({'errno':1,'msg':'卡包不存在'})
@@ -2448,15 +2283,15 @@ class Create_Package(BaseHandler):
         package_name = pack.get('package_name')
         up = UserProfile.objects.get(username=request.user)
         try:
-            package = Master_Package.objects.filter(package_name=package_name,create_user=up)
-            if package:
-                return self.write_json({'errno':1,'msg':'该卡包名称已被占用'})
+            tmp = if_package_name_taken(self, package_name, up)
+            if tmp: return tmp
+
             packages = Master_Package()
             packages.package_name = package_name.strip()
             packages.create_user = up
             packages.branch_name = 'master'
-            package_name = up.username + package_name.strip()
-            result = git_utils.create_git_package(package_name)
+            package_repo = utils.get_package_repo(up.username, package_name.strip())
+            result = git_utils.create_git_package(package_repo)
 
             data = []
             data.append(result.get('data'))
@@ -2468,6 +2303,7 @@ class Create_Package(BaseHandler):
                 return self.write_json({'errno':1,'msg':'创建卡包失败'})
         except ValueError:
             return self.write_json({'errno':1,'msg':'卡包已存在'})
+
 
 #教学中心-删除卡包
 class Delete_Package(BaseHandler):
