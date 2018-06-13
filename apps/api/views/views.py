@@ -28,44 +28,6 @@ logging.basicConfig(filename=settings.LOG_FILE, level=logging.DEBUG)
 log_utils.default_logging_config()
 logger = log_utils.getLogger(__name__)
 
-##########################################
-# 根据git仓库来重新初始化存储
-##########################################
-
-def re_init_cards_by_package(package_id, package_dir, branch):
-    logger.info("re_init_cards_by_package: %s %s %s" % (package_id, package_dir, branch))
-    for parent,dirnames,filenames in os.walk(package_dir):
-        for dirname in  dirnames:
-            logger.debug("dirname(%s) - %s" % (parent, dirname))
-
-        for filename in filenames:
-            logger.debug("file(%s) - %s" % (parent, filename))
-
-
-##########################################
-# 检测对应的文件是否在其他分支里有
-##########################################
-
-def git_same_card_number(card_location):
-    cards = Card.objects.filter(card_location=card_location)
-    count = len(cards)
-    logger.info("git_same_card_number:%s %s" % (card_location, count))
-    return count
-
-
-
-##########################################
-# Get PID from cards
-##########################################
-
-def get_pid_from_card(package_id,p_path):
-    logger.info("get_pid_from_card: %s" % (p_path,))
-    cards = Card.objects.filter(package_id=package_id,card_location=p_path)
-    if len(cards):
-        return card[0].id
-    else:
-        return -1
-
 
 #教学中心-创建课程
 class Create_Course(BaseHandler):

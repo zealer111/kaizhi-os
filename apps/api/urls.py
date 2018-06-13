@@ -42,14 +42,16 @@ urlpatterns = [
     url('^modify_discuss_file', views.Modify_Discuss_File.as_view()),
     url('^batch_modify_file', views.Batch_Modify_File.as_view()),
 
+    # 教学中心START
     url('^create_file', teacher.Create_File.as_view()),
     url('^delete_package', teacher.Delete_Package.as_view()),
     url('^delete_file', teacher.Delete_File.as_view()),
     url('^rename_package', teacher.Rename_Package.as_view()),
     url('^rename_file', teacher.Rename_File.as_view()),
     url('^modify_file', teacher.Modify_File.as_view()),
-    # 教学中心
     url('^copy_file', teacher.Copy_File.as_view()),
+    # 教学中心END
+
     url('^commit_hw', views.Commit_Hw.as_view()),
     url('^colse_discuss', views.Colse_Discuss.as_view()),
     url('^delete_card_comment', views.Delete_Card_Comment.as_view()),
