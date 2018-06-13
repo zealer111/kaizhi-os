@@ -77,7 +77,7 @@ def get_pid_from_card(package_id,p_path):
 # 删除文件
 ##########################################
 
-def delete_file(self, key, user,role):
+def delete_file(self, key, user, role):
     try:
         logger.info("delete file: %s %s %s" % (key, user, role))
         up = UserProfile.objects.get(username=user)
@@ -138,14 +138,19 @@ def if_package_dir_used_by_others(self, package_id, path):
     return _package_dir_taken(self, 0, package_id, path)
 
 def _package_dir_taken(self, level, package_id, path):
-    logger.debug("if_package_dir_taken:%s" % (package_id, path))
-    cards = Card.object.filter(package_id=package_id, card_location=key)
+    logger.debug("if_package_dir_taken:%s %s" % (package_id, path))
+    cards = Card.objects.filter(package_id=package_id, card_location=path)
     if len(cards)==0:
         return self.write_json({'errno':1006,'msg':'卡包文件夹不存在'})
     else:
         card = cards[0]
         if card.c_type == settings.GIT_TYPE_DIR:
-            cards = Card.object.filter(pid=card.id)
+            num = git_same_card_number(card.card_location)
+            if num>level: # 已有其他地方使用
+                logger.debug("if_package_dir_taken:%s:%s" % (card.card_location, num))
+                raise SameFileCheck("%s:%s" % (card.card_location, num))
+
+            cards = Card.objects.filter(pid=card.id)
             for c in cards:
                 return if_package_dir_taken(c.package_id,c.card_location)
         else:
@@ -1524,6 +1529,7 @@ class Copy_File(BaseHandler):
                            return self.write_json({'errno':'1','msg':'文件已存在'})
 
                         new_path = os.path.join(package_dir.package_location,card.file_name)
+                        logger.debug("newpath %s" % new_path)
                         if if_card_used_by_others(new_path):
                             return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
 
@@ -1552,6 +1558,12 @@ class Copy_File(BaseHandler):
                             if _card:
                                 return self.write_json({'errno':'1','msg':'文件已存在'})
 
+                            new_path = os.path.join(card_dir.card_location,card.file_name)
+                            logger.debug("newpath %s" % new_path)
+                            if if_card_used_by_others(new_path):
+                                return self.write_json({'errno':101,'msg':'其他用户已占用此文件名，请更换'})
+
+
                             cp_card = Card()
                             cp_card.package_id = card_dir.package_id
                             cp_card.branch = card_dir.branch
@@ -1564,7 +1576,7 @@ class Copy_File(BaseHandler):
                             cp_card.pid = card_dir.id
                             result = git_utils.copy_file('0',card_dir.package_location,card_dir.card_location,cp_card.branch,
                                                            card.card_location)
-                            cp_card.card_location = os.path.join(card_dir.card_location,card.file_name)
+                            cp_card.card_location = new_path
                             cp_card.save()
                         except Card.DoesNotExist:
                             return self.write_json({'errno':1,'msg':'卡片不存在'})
@@ -1681,13 +1693,13 @@ class Rename_File(BaseHandler):
 
                 try:
                     new_path = os.path.join(os.path.dirname(card.card_location),new_name)
-                    if_package_dir_used_by_others(self, card.package_id, )
+                    if_package_dir_used_by_others(self, card.package_id, new_path)
                 except SameFileCheck as e:
                     return self.write_json({'errno':101,'msg':'其他用户正在操作中，无法重命名'})
 
                 result = git_utils.rename_file('0',card.package_location,card.branch,card.card_location,'',card.file_name,new_name)
                 card.file_name = new_name
-                card.card_location = result.get('data')['repo']
+                card.card_location = new_path #result.get('data')['repo']
                 new_dir = Card.objects.filter(pid=card.id)
                 for dirs in new_dir:
                     dir_path = os.path.join(card.card_location,dirs.file_name)

@@ -109,7 +109,7 @@ class AuthPhone(BaseHandler):
         error: “0/1”， # 错误码，0 表示成功
         msg：“string”，
         data: {
-            exist_status : “y/n”，   // 是否存在状态
+            exist_status : 0/1,   // 是否存在状态
             userInfo : {   // 如果已在网站注册过，则返回网站的用户信息
                 avatar: 'sting',    //头像
                 nickname: 'string', //昵称
@@ -130,7 +130,7 @@ class AuthPhone(BaseHandler):
             ac = AuthCode.objects.get(phone=phone, auth_code=authcode)
             user = UserProfile.objects.get(phone=phone)
             return self.write_json({'errno': 0, 'msg': 'success', 'data': {
-                    "exist_status": "y",
+                    "exist_status": 0,
                     "userInfo":{
                         'avatar': user.head_img,
                         'nickname': user.nickname,
@@ -141,7 +141,7 @@ class AuthPhone(BaseHandler):
         except AuthCode.DoesNotExist:
             return self.write_json({'errno': 1, 'msg': '验证码错误，请重新获取', 'data': {}})
         except UserProfile.DoesNotExist:
-            return self.write_json({'errno': 1, 'msg': '用户不存在', 'data': {'exist_status': 'n'}})
+            return self.write_json({'errno': 0, 'msg': '用户不存在', 'data': {'exist_status': 1}})
 
 
 class SetPassword(BaseHandler):
@@ -152,6 +152,7 @@ class SetPassword(BaseHandler):
         phone: 'string',    #手机号
         password: 'string', #密码
         openId: 'string',   #
+        type: 1/2, #1->网站用户, 2->小程序用户
     }
 
     return {
@@ -167,7 +168,20 @@ class SetPassword(BaseHandler):
         phone = msg.get('phone', '')
         password = msg.get('password', '')
         openid = msg.get('openId', '')
-        return self.write_json({'errno': 0, 'msg': 'success', 'data': {'userId': '323534'}})
+        _type = msg.get('type', '')
+
+        if not phone and not password and not openid and not _type:
+            return self.write_json({'errno': 1, 'msg': '信息不全', 'data': {'userId': ''}})
+
+        user = User(username=phone, password=password)
+        user.save()
+        up = UserProfile()
+        up.user = user
+        up.phone = phone
+        up.openid = openid
+        up.type = _type
+        up.save()
+        return self.write_json({'errno': 0, 'msg': 'success', 'data': {'userId': user.id}})
 
 class CoursesList(BaseHandler):
     """

@@ -238,20 +238,20 @@ class Delete_Course(BaseHandler):
             all_course = Course.objects.filter(create_user=up)
             for courses in all_course:
                 data.append ({
-                'title':courses.title,
-                'course_id':courses.id,
-                'description':courses.description,
-                'host':courses.host,
-                'subtitle':courses.subtitle,
-                'classify':courses.classify,
-                'price':courses.price,
-                'subtitle':courses.subtitle,
-                'is_discuss':courses.is_discuss,
-                'is_fee':courses.is_fee,
-                'cover':courses.cover,
-                'price_url':courses.price_url,
-                'start_time':courses.start_time,
-                'end_time':courses.end_time,
+                    'title':courses.title,
+                    'course_id':courses.id,
+                    'description':courses.description,
+                    'host':courses.host,
+                    'subtitle':courses.subtitle,
+                    'classify':courses.classify,
+                    'price':courses.price,
+                    'subtitle':courses.subtitle,
+                    'is_discuss':courses.is_discuss,
+                    'is_fee':courses.is_fee,
+                    'cover':courses.cover,
+                    'price_url':courses.price_url,
+                    'start_time':courses.start_time,
+                    'end_time':courses.end_time,
             })
             pages = Paginator(data,count)
             return self.write_json({'errno': 0, 'msg': 'success','total_count':all_course.count(),
@@ -302,7 +302,7 @@ class Modify_Course(BaseHandler):
                     dis_package.p_type = 2
                     dis_package.create_user = up
                     #package_name = course.title +'讨论卡包'
-                    package_repo = utils.get_package_repo(course.title, "讨论卡包") 
+                    package_repo = utils.get_package_repo(course.title, "讨论卡包")
                     result = git_utils.create_git_package(package_repo)
                     if '0' == result.get('errno'):
                         dis_package.package_location = result.get('data')['repo']
@@ -660,22 +660,20 @@ class My_Create_Card_Search(BaseHandler):
                                             'total_count':card.count(),'data': p.page(page).object_list})
 
             else:
-                folder = Card.objects.get(id=info.get('key'))
                 def search_file(pid):
                     da = []
                     other = Card.objects.filter(c_type=0,pid=pid)
-                    for o in other:
-                        card = Card.objects.filter(file_name__contains=file_name,c_type=1,pid=o.id,create_user=up)
-                        for c in card:
-                            da.append(c.id)
                     if other:
-                        for os in other:
-                            search_file(os.id)
-                    else:
-                        card = Card.objects.filter(file_name__contains=file_name,c_type=1,pid=pid,create_user=up)
-                        for c in card:
-                            da.append(c.id)
+                        for o in other:
+                            card = Card.objects.filter(file_name__contains=file_name,c_type=1,pid=o.id,create_user=up)
+                            for c in card:
+                                da.append(c.id)
+                            search_file(o.id)
+                    card = Card.objects.filter(file_name__contains=file_name,c_type=1,pid=pid,create_user=up)
+                    for c in card:
+                        da.append(c.id)
                     return da
+                folder = Card.objects.get(id=info.get('key'))
                 s = search_file(folder.id)
                 for ss in s:
                     card = Card.objects.filter(id=ss)
@@ -847,7 +845,7 @@ class Upload_File(BaseHandler):
                     card.create_user = up
                     card.c_type = 1
                     card.pid = pid
-                    result = git_utils.create_file(card.package_location,card.branch,content)
+                    result = git_utils.create_file(card.package_location,card.branch,path,content)
                     card.card_location = path
                     video = re.search('video',content)
                     if video:

@@ -136,7 +136,7 @@ def delete_branch(package_location,branch,del_branch):
         'branch':branch,
         'del_branch':del_branch
         }
-    url = settings.GIT_DELETE_BRANCHE
+    url = settings.GIT_DELETE_BRANCH
     r = requests.post(url,data=data)
     return r.json()
 

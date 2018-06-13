@@ -193,7 +193,8 @@ def assi_path(self,key, return_json=True):
     if p:
         package = Branch_Package.objects.get(id=key)
     else:
-        package = Master_Package.objects.get(id=key)
+        #package = Master_Package.objects.get(id=key)
+        package = Branch_Package.objects.get(id=key)
     data = []
     data.append({
         'file':package.package_name,
