@@ -21,6 +21,7 @@ from apps import settings
 import operator
 from libs import log_utils
 from libs import git_utils
+from libs import utls
 import logging
 
 logging.basicConfig(filename=settings.LOG_FILE, level=logging.DEBUG)
@@ -154,8 +155,9 @@ class Create_Course(BaseHandler):
             dis_package.package_name = title +'讨论卡包'
             dis_package.p_type = 2
             dis_package.create_user = up
-            package_name = title +'讨论卡包'
-            result = git_utils.create_git_package(package_name)
+            #package_name = title +'讨论卡包'
+            package_repo =utils.get_package_repo(title,'讨论卡包')
+            result = git_utils.create_git_package(package_repo)
             if '0' == result.get('errno'):
                 dis_package.package_location = result.get('data')['repo']
                 dis_package.save()
@@ -370,8 +372,9 @@ class Modify_Course(BaseHandler):
                     dis_package.package_name = course.title +'讨论卡包'
                     dis_package.p_type = 2
                     dis_package.create_user = up
-                    package_name = course.title +'讨论卡包'
-                    result = git_utils.create_git_package(package_name)
+                    #package_name = course.title +'讨论卡包'
+                    package_repo = utils.get_package_repo(course.title, "讨论卡包") 
+                    result = git_utils.create_git_package(package_repo)
                     if '0' == result.get('errno'):
                         dis_package.package_location = result.get('data')['repo']
                         dis_package.save()
@@ -2267,8 +2270,8 @@ class Create_Package(BaseHandler):
             packages.package_name = package_name.strip()
             packages.create_user = up
             packages.branch_name = 'master'
-            package_name = up.username + package_name.strip()
-            result = git_utils.create_git_package(package_name)
+            package_repo = uutls.get_package_repo(p.username, package_name.strip())
+            result = git_utils.create_git_package(package_repo)
 
             data = []
             data.append(result.get('data'))
@@ -2443,7 +2446,7 @@ class Commit_Hw(BaseHandler):
                                 'aw_key':str(aw_card.id),
                                 'answer':msg.get('content'),
                                 'head_img':up.head_img,
-                                'create_time':str(user_hw.create_time)[19:]
+                                'create_time':str(user_hw.create_time)[:19]
                                 }
                 aw_detail = []
                 aw_detail.append({
@@ -2484,7 +2487,7 @@ class Modify_Hw(BaseHandler):
                     'aw_key':aw_card.id,
                     'answer':msg.get('content'),
                     'head_img':up.head_img,
-                    'create_time':str(hw.create_time)[19:]
+                    'create_time':str(hw.create_time)[:19]
                  }
             aw_card.save()
             aw_detail = []
@@ -2496,7 +2499,7 @@ class Modify_Hw(BaseHandler):
                     'user':coms.user.username,
                     'head_img':coms.user.head_img,
                     'content':coms.content,
-                    'create_time':str(coms.create_time)[19:]
+                    'create_time':str(coms.create_time)[:19]
                     })
             aw_detail.append({
                 'key':aw_card.id,

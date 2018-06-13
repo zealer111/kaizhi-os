@@ -86,7 +86,7 @@ urlpatterns +=[
 
 # 小程序API
 urlpatterns +=[
-    url('^xcx/auth-code', xcx.AuthCode.as_view()),#获取验证码
+    url('^xcx/auth-code', xcx.GetAuthCode.as_view()),#获取验证码
     url('^xcx/auth-phone', xcx.AuthPhone.as_view()),#根据验证码验证手机号
     url('^xcx/set-password', xcx.SetPassword.as_view()),#设置密码
     url('^xcx/courses-list', xcx.CoursesList.as_view()),#课程列表
@@ -99,4 +99,5 @@ urlpatterns +=[
     url('^xcx/get-ordernum', xcx.GetOrderNum.as_view()), #获取购买课程订单号
     url('^xcx/get-payinfo', xcx.GetPayInfo.as_view()), #获取付款信息
     url('^xcx/get-payresult', xcx.GetPayResult.as_view()), #获取付款结果信息
+    url('^xcx/login', xcx.AuthLogin.as_view()), #授权登陆
 ]

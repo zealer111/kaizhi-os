@@ -60,7 +60,7 @@ def get_pid_from_card(package_id,p_path):
     logger.info("get_pid_from_card: %s" % (p_path,))
     cards = Card.objects.filter(package_id=package_id,card_location=p_path)
     if len(cards):
-        return card[0].id
+        return cards[0].id
     else:
         return -1
 
