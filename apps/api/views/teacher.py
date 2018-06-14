@@ -152,7 +152,7 @@ def _package_dir_taken(self, level, package_id, path):
 
             cards = Card.objects.filter(pid=card.id)
             for c in cards:
-                return if_package_dir_taken(c.package_id,c.card_location)
+                return if_package_dir_used_by_others(self,c.package_id,c.card_location)
         else:
             num = git_same_card_number(card.card_location)
             if num>level: # 已有其他地方使用
@@ -606,7 +606,8 @@ class My_Create_Card_Search(BaseHandler):
             elif '0' == info.get('key'):
                 mastet_pacakge = Master_Package.objects.filter(create_user=up)
                 for ms in mastet_pacakge:
-                    card = Card.objects.filter(file_name__contains=file_name,c_type=1,create_user=up,package_id=ms.id)
+                    card = Card.objects.filter(~Q(tags=4),~Q(tags=3),file_name__contains=file_name,
+                                                c_type=1,create_user=up,package_id=ms.id)
                     for cards in card:
                         data.append({
                             'title':cards.file_name,
@@ -623,7 +624,8 @@ class My_Create_Card_Search(BaseHandler):
             elif '1' == info.get('key'):
                 branch_pacakge = Branch_Package.objects.filter(create_user=up)
                 for bs in branch_pacakge:
-                    card = Card.objects.filter(file_name__contains=file_name,c_type=1,create_user=up,package_id=bs.id)
+                    card = Card.objects.filter(~Q(tags=4),~Q(tags=3),file_name__contains=file_name,
+                                                c_type=1,create_user=up,package_id=bs.id)
                     for cards in card:
                         data.append({
                             'title':cards.file_name,
@@ -643,14 +645,16 @@ class My_Create_Card_Search(BaseHandler):
                     da = []
                     other = Card.objects.filter(c_type=0,pid=pid)
                     for o in other:
-                        card = Card.objects.filter(file_name__contains=file_name,c_type=1,pid=o.id,create_user=up)
+                        card = Card.objects.filter(~Q(tags=4),~Q(tags=3),file_name__contains=file_name,
+                                                    c_type=1,pid=o.id,create_user=up)
                         for c in card:
                             da.append(c.id)
                     if other:
                         for os in other:
                             search_file(os.id)
                     else:
-                        card = Card.objects.filter(file_name__contains=file_name,c_type=1,pid=pid,create_user=up)
+                        card = Card.objects.filter(~Q(tags=4),~Q(tags=3),file_name__contains=file_name,
+                                                    c_type=1,pid=pid,create_user=up)
                         for c in card:
                             da.append(c.id)
                     return da
@@ -772,78 +776,6 @@ class My_Assistant(BaseHandler):
         return self.write_json({'errno':0, 'msg': 'success','data':getChildren()})
 
 #教学中心-上传文件
-class Upload_File(BaseHandler):
-    @logger_decorator
-    @transaction.atomic
-    def post(self, request):
-        key = request.POST.get('key')
-        userid = request.POST.get('userid')
-        token = request.POST.get('token')
-        file_field = request.FILES.getlist('file')
-        try:
-            up = UserProfile.objects.get(id=userid,token=token)
-        except UserProfile.DoesNotExist:
-            return self.write_json({'errno':'1','msg':'用户不存在'})
-        if 'file' not in request.FILES:
-            return self.write_json({'errno':'1','msg':'文件为空'})
-        for f in file_field:
-            md_file = os.path.join('upload',str(f))
-            with open(md_file, 'w+') as ff:
-               for chunk in f.chunks():
-                    ff.write(chunk.decode('utf-8'))
-               ff.close()
-            fs = open(md_file,'r')
-            lines = fs.read()
-            content = ''
-            for line in lines:
-                content += line
-            verify = verify_content(self,content)
-            print(verify)
-            if 0 == verify.get('errno'):
-                package = get_package(self,key)
-                if package:
-                    branch = package.branch
-                    pid = package.id
-                    package_id = package.id
-                    package_location = package.package_location
-                    path = os.path.join(package.package_location,f.name)
-                else:
-                    folder = Card.objects.get(id=key)
-                    branch = package.branch
-                    pid = folder.id
-                    package_id = folder.package.id
-                    package_location = folder.package_location
-                    path = os.path.join(folder.card_location,f.name)
-                card = Card.objects.filter(file_name=f.name,pid=pid)
-                if not card:
-                    card = Card()
-                    card.package_id = package_id
-                    card.package_location = package_location
-                    card.branch = branch
-                    card.file_name = f.name
-                    card.content = content
-                    card.create_user = up
-                    card.c_type = 1
-                    card.pid = pid
-                    result = git_utils.create_file(card.package_location,card.branch,content)
-                    card.card_location = path
-                    video = re.search('video',content)
-                    if video:
-                       card.tags = 1
-                       card.save()
-                    if 'SQ' in content or 'MQ' in content:
-                       card.tags = 2
-                       card.save()
-                    if '0' == result.get('errno'):
-                        card.save()
-                        return get_file_dir(self,request.POST.get('role'),up)
-                    else :
-                        return self.write_json({'errno': 1,'msg':'上传文件失败'})
-                else:
-                    return self.write_json({'errno': 1,'msg':'文件已存在'})
-            else :
-                return self.write_json({'errno': 1,'msg':'文件格式错误'})
-        return self.write_json({'errno': 0,'msg':'success'})
 
 #教学中心-创建文件
 class Create_File(BaseHandler):
@@ -1674,6 +1606,7 @@ class Rename_File(BaseHandler):
         role = msg.get('role')
         logger.info("Rename_File %s" % (file_name,))
         try:
+            #目录下文件夹、文件重命名
             up = UserProfile.objects.get(username=request.user)
             card = Card.objects.get(id=msg.get('key'))
             c = Card.objects.filter(~Q(file_name=card.file_name),package_id=card.package_id,file_name=file_name)
@@ -1686,7 +1619,7 @@ class Rename_File(BaseHandler):
                 new_name = file_name
 
                 try: # 源目标文件已经大于1
-                    if_package_dir_duplicated(self, card.package_id, card.card_location)
+                   if_package_dir_duplicated(self, card.package_id, card.card_location)
                 except SameFileCheck as e:
                     return self.write_json({'errno':101,'msg':'其他用户正在操作中，无法重命名'})
 
@@ -1699,7 +1632,7 @@ class Rename_File(BaseHandler):
 
                 result = git_utils.rename_file('0',card.package_location,card.branch,card.card_location,'',card.file_name,new_name)
                 card.file_name = new_name
-                card.card_location = new_path #result.get('data')['repo']
+                card.card_location = new_path # result.get('data')['repo']
                 new_dir = Card.objects.filter(pid=card.id)
                 for dirs in new_dir:
                     dir_path = os.path.join(card.card_location,dirs.file_name)
@@ -1743,8 +1676,9 @@ class Rename_File(BaseHandler):
                 return get_file_dir(self,role,up)
             return self.write_json({'errno':0,'msg':'修改成功'})
         except Card.DoesNotExist:
-            return self.write_json({'errno':1,'msg':'重命名卡片不存在'})
-            """folder_dir = get_package(self,card.pid)
+          #  return self.write_json({'errno':1,'msg':'重命名卡片不存在'})
+          #  卡包下文件夹、文件重命名
+            folder_dir = get_package(self,card.pid)
             if folder_dir:
                 if  0 == card.tags:
                     c = Card.objects.filter(~Q(file_name=card.file_name),pid=folder_dir.id,file_name=file_name +'.md')
@@ -1769,7 +1703,7 @@ class Rename_File(BaseHandler):
             card.card_location = result['data'].get('repo')
             card.save()
             return get_file_dir(self,role,up)
-            """
+           # """
 
 
 #教学中心-卡包重命名

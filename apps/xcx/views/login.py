@@ -36,26 +36,29 @@ class Login(BaseHandler):
         print(session_key)
         pc = WXBizDataCrypt(app_id, session_key)
         user_info = pc.decrypt(encrypted_data, iv)
-        print(user_info)
+        print('>>>>>', user_info)
         # 获得openid
         open_id = user_info['openId']
 #        cache.set("open_id", open_id, 3600)
 #        cache.set("app_id", app_id, 3600)
 #        cache.set("secret", secret, 3600)
 
-        if "unionId" in user_info:
-            token = jwt_login(user, request)
+        if "openId" in user_info:
             try:
                 user = UserProfile.objects.get(openid=open_id)
                 # 存在状态
             except UserProfile.DoesNotExist:
-                user = register(user_info)
+                #user = register(user_info)
+                return self.write_json({'errno': 1, 'msg': '用户不存在', 'openId': open_id})
+
+            #token = jwt_login(user, request)
 
             data = {
                 'errno': 0,
                 'msg': 'success',
-                "token_jwt": token.decode("utf-8"),
+                #'token_jwt': token.decode("utf-8"),
                 'user_info': user_info,
+                'openId': open_id,
             }
             return self.write_json(data)
         else:
@@ -77,8 +80,8 @@ def get_session_info(appid, secret, js_code):
 
 # 储存用户到数据库中
 def register(user_info):
-    user = UserProfile(username=user_info['nickName'], head_img=user_info['avatarUrl'],unionid=user_info['unionId'],
-                       openid=user_info['openId'],sex=user_info['gender'],phone=user_info['verify_phone_number'])
-    user.save()
-    return user
+    up = UserProfile(username=user_info['nickName'], head_img=user_info['avatarUrl'],
+                       openid=user_info['openId'])
+    up.save()
+    return up
 

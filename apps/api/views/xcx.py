@@ -167,10 +167,12 @@ class SetPassword(BaseHandler):
         msg = json.loads(request.body)
         phone = msg.get('phone', '')
         password = msg.get('password', '')
-        openid = msg.get('openId', '')
+        open_id = msg.get('openId', '')
         _type = msg.get('type', '')
 
-        if not phone and not password and not openid and not _type:
+        print('>>>>>>>>>>', msg)
+        if not phone and not password and not open_id and not _type:
+            print('%%%%%%%%%')
             return self.write_json({'errno': 1, 'msg': '信息不全', 'data': {'userId': ''}})
 
         user = User(username=phone, password=password)
@@ -178,7 +180,7 @@ class SetPassword(BaseHandler):
         up = UserProfile()
         up.user = user
         up.phone = phone
-        up.openid = openid
+        up.openid = open_id
         up.type = _type
         up.save()
         return self.write_json({'errno': 0, 'msg': 'success', 'data': {'userId': user.id}})
@@ -186,143 +188,228 @@ class SetPassword(BaseHandler):
 class CoursesList(BaseHandler):
     """
     课程列表
+
+    url: api/xcx/courses-list
+    method: POST
+    parameters {
+        token: 'string',
+        page: int, #页码
+        userId: string,
+        limit: int, #每页显示多少个课程
+    }
+
+    return {
+        errnor: 0/1,
+        msg: 'string',
+        data: [
+            "title": "string", #标题
+            "host": "string", #讲师
+            "cover": "http://i10.topitme.com/o054/1005435275a84a3f41.jpg", #封面
+            "label": 'string',  #课程标签状态: bought/new/opened
+            "personNum": int, #正在学习人数
+            "price": int, #课程价格
+            "status": int, #用户是否购买此课程状态、0已购买/1未购买
+            "start_time": "2018-3-20",
+            "end_time": "2018-5-10"
+            "course_id": "2de4da87065111e88b265254009ecd21", #课程id
+        ]
+    }
     """
     def post(self, request):
-        return self.write_json({'errno': 0, 'msg': 'success', 'data': [
-            {
-                "title": "开智学堂",
-                "host": "杨志平",
-                "cover": "https://img2.mukewang.com/szimg/59b8a486000107fb05400300.jpg",
-                "label": 'bought',  #课程标签状态
-                "personNum": 10, #正在学习人数
-                "price": 100, #课程价格
-                "status": 0, #用户是否购买此课程状态、0已购买/1未购买
-                "start_time": "2018-3-20",
-                "end_time": "2018-5-10",
-                "course_id": "2de4da87065111e88b265254009ecd21", #课程id
-            },
+        courses = Course.objects.all()
+        msg = json.loads(request.body)
+        token = msg.get('token', '')
+        page = msg.get('page', 1)
+        user_id = msg.get('userId', '')
+        limit = msg.get('limit', 5)
 
-            {
-                "title": "开智学堂",
-                "host": "杨志平",
-                "cover": "https://img2.mukewang.com/szimg/59b8a486000107fb05400300.jpg",
-                "label": 'new',  #课程标签状态
-                "personNum": 23, #正在学习人数
-                "price": 100, #课程价格
-                "status": 0, #用户是否购买此课程状态、0已购买/1未购买
-                "start_time": "2018-3-20",
-                "end_time": "2018-5-10",
-                "course_id": "2de4da87065111e88b265254009ecd21", #课程id
-            },
+        bought = User_Buy_Record.objects.filter(user__id=user_id, status=1)
 
-            {
-                "title": "开智学堂",
-                "host": "杨志平",
-                "cover": "https://img2.mukewang.com/szimg/59b8a486000107fb05400300.jpg",
-                "label": 'opened',  #课程标签状态
-                "personNum": 10, #正在学习人数
-                "price": 1000, #课程价格
-                "status": 1, #用户是否购买此课程状态、0已购买/1未购买
-                "start_time": "2018-3-20",
-                "end_time": "2018-5-10",
-                "course_id": "2de4da87065111e88b265254009ecd21", #课程id
-            },
-        ]
-    })
+        data = []
+        for c in courses:
+            status = 0 if c in bought else 1
+            if not status:
+                label = 'bought'
+            elif datetime.datetime.strptime(c.start_time[:10], '%Y-%m-%d') < datetime.datetime.now() and status:
+                label = 'opened'
+            else:
+                label = 'new'
+            data.append({
+                'course_id': c.id,
+                'title': c.title,
+                'host': c.host,
+                'is_fee': c.is_fee,
+                'cover': c.cover,
+                'label': label,
+                'personNum': '', #TODO 
+                'price': c.price,
+                'status': status,
+                'start_time': c.start_time,
+                'end_time': c.end_time,
+            })
+
+        p = Paginator(data, limit)
+        data = p.page(page).object_list
+        return self.write_json({'errno': 0, 'msg': 'success', 'data': data})
 
 class CourseDetail(BaseHandler):
     """
     课程详情
+
+    url: api/xcx/course-detail
+    method: POST
+    parameters {
+        course_id: int, #课程ID
+    }
+
+    return {
+        "title": "string",
+        "cover": "string", #封面
+        "host": "string", #课程主讲人
+        "start_time": "2018-1-20",
+        "end_time": "string",
+        "description": "string", #内容简介
+        "price": int,
+        "personNum": int, #正在学习人数
+        "course_id": "string",
+    }
     """
     def post(self, request):
-        return self.write_json({'errno': 0, 'msg': 'success', 'data': {
-            "title": "开智智学堂",
-            "cover": "http://pic1.win4000.com/wallpaper/d/55efa298766d2.jpg",
-            "host": "杨志平", #课程主讲人
-            "start_time": "2018-1-20",
-            "end_time": "2018-2-10",
-            "description": "描述", #内容简介
-            "price": 111,
-            "personNum": 0, #正在学习人数
-            "course_id": "7909e1f1065111e88b265254009ecd21",
-        }})
+        msg = json.loads(request.body)
+        course_id = msg.get('course_id', '')
+
+        try:
+            c = Course.objects.get(id=course_id)
+            return self.write_json({'errno': 0, 'msg': 'success', 'data': {
+                "title": c.title,
+                "cover": c.cover,
+                "host": c.host, #课程主讲人
+                "start_time": c.start_time[:10],
+                "end_time": c.end_time[:10],
+                "description": c.description, #内容简介
+                "price": c.price,
+                "personNum": 0, #TODO 正在学习人数
+                "course_id": c.id,
+            }})
+        except Course.DoesNotExist:
+            return self.write_json({'errno': 1, 'msg': '课程不存在', 'data': {}})
 
 class Messages(BaseHandler):
     """
     消息中心
-    """
-    def post(self, request):
-        return self.write_json({'errno': 0, 'msg': 'success', 'data': [
+
+    url: api/xcx/messages
+    method: POST
+    parameters {
+        token: string,
+        page: int,
+        userId: string
+    }
+
+    return {
+        errno: 0/1,
+        msg: string,
+        data: [
             {
-                "time": 1526895875,
-                "msg": [
+                time: int,
+                msg: [
                     {
-                        "avatar": "",
-                        "text": "欢迎加入认知写作学5期，接下来的三个月一起加油吧~",
-                        "card": {
-                            "type": "markdown",
-                            "title": "大脑喜欢情绪--上.md",
-                            "link": "www.google.com"
+                        avatar: string,
+                        text: string,
+                        card: {
+                            type: string, # markdown
+                            title: string,
+                            link: string,
                         }
-                    },
-                    {
-                        "avatar": "",
-                        "text": "欢迎加入认知写作学5期，接下来的三个月一起加油吧~",
-                        "card": {
-                            "type": "markdown",
-                            "title": "大脑喜欢情绪--上.md",
-                            "link": "www.google.com"
-                        }
-                    },
-                    {
-                        "avatar": "",
-                        "text": "欢迎加入认知写作学5期，接下来的三个月一起加油吧~",
-                        "card": {
-                            "type": "markdown",
-                            "title": "大脑喜欢情绪--上.md",
-                            "card_id": '0', #卡片id
-                        }
-                    }
-                ]
-            },
-            {
-                "time": 1526895875,
-                "msg": [
-                    {
-                        "avatar": "",
-                        "text": "欢迎加入认知写作学5期，接下来的三个月一起加油吧~",
-                        "card": {
-                            "type": "markdown",
-                            "title": "大脑喜欢情绪--上.md",
-                            "card_id": '0', #卡片id
-                        }
-                    },
-                    {
-                        "avatar": "",
-                        "text": "欢迎加入认知写作学5期，接下来的三个月一起加油吧~",
-                        "card": {}
-                    },
-                    {
-                        "avatar": "",
-                        "text": "欢迎加入认知写作学5期，接下来的三个月一起加油吧~",
-                        "card": {}
                     }
                 ]
             }
+        ]
+    }
+    """
+    def post(self, request):
+        msg = json.loads(request.body)
+        token = msg.get('token', '')
+        page = msg.get('page', '')
+        user_id = msg.get('userId', '')
 
-        ]})
+        try:
+            user = UserProfile.objects.get(id=user_id)
+            messages = System_Message.objects.filter(to_user=user)
+            if not messages:
+                return self.write_json({'errno': 1, 'msg': '无消息', 'data': []})
+
+            date_set = set([m.create_time.strftime('%Y-%m-%d') for m in messages])
+            for d in date_set:
+                one_more_day = datetime.datetime.strptime(d, '%Y-%m-%d') + datetime.timedelta(days=1)
+                msgs = messages.filter(
+                            create_time__gte=datetime.datetime.strptime(d, '%Y-%m-%d'),
+                            create_time__lt=one_more_day
+                )
+
+                temp = {}
+                temp['time'] = msgs[0].create_time
+                temp['msg'] = []
+                for m in msgs:
+                    temp_msg = {}
+                    temp_msg['avatar'] = m.user.avatar
+                    temp_msg['text'] = m.message #TODO
+                    temp_msg['card'] = {
+                        'type': m.card_tags,
+                        'title': m.content, #TODO
+                        'link': m.card_url,
+                        'card_id': m.card_id
+                    }
+                    temp['msg'].append(temp_msg)
+            data = []
+            data.append(temp)
+            return self.write_json({'errno': 0, 'msg': 'success', 'data': {'errno': 0, 'msg': 'success', 'data': data}})
+        except UserProfile.DoesNotExist:
+            return self.write_json({'errno': 1, 'msg': '用户不存在', 'data': []})
 
 class MyCollections(BaseHandler):
     """
-    我的收藏
+    我的收藏/卡片收藏
+
+    url: api/xcx/my-collections
+    method: POST
+    parameters {
+        userId: string,
+        token: string,
+        collect_type: string, # all/deep/writing
+        page: int,
+    }
+
+    return {
+        errno: int, #0/1
+        msg: string,
+        data: list, # [
+            {
+                card_type: string, #markdown/exam/video
+                title: string,
+                card_id: string,
+            }
+        ]
+    }
     """
     def post(self, request):
-        return self.write_json({'errno': 0, 'msg': 'success', 'data': [{
-            'card_type': 'markdown', #卡片类型
-            'title': '卡片标题',
-            'card_id': '352' #卡片ID
-        }]
-    })
+        msg = json.loads(request.body)
+        user_id = msg.get('userId', '')
+        token = msg.get('token', '')
+        collect_type = msg.get('collect_type', '')
+        page = msg.get('page', 1)
+
+        user = UserProfile.objects.get(id=user_id)
+        colt = Card_Collect.objects.filter(user=user, status=1)
+
+        data = []
+        for c in colt:
+            data.append({
+                'card_type': c.card.c_type,
+                'title': c.card.file_name,
+                'card_id': c.card.id
+            })
+        return self.write_json({'errno': 0, 'msg': 'success', 'data': data})
 
 class CourseList(BaseHandler):
     """
@@ -340,14 +427,14 @@ class CourseList(BaseHandler):
                         "title": "1-1",
                         "key": "cf7734660b1011e88b265254009ecd21",
                         "type": "directory",
-                        "status": 0, #0未学
+                        "status": 1, #1已学
                         "childern": []
                     },
                     {
                         "title": "美美美",
                         "key": "af13895a0b0f11e88b265254009ecd21",
                         "type": "file",
-                        "status": 1, #1已学
+                        "status": 0, #0未学
                         "childern": []
                     }
                 ]

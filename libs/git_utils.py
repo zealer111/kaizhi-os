@@ -147,7 +147,7 @@ def rename_file(value,package_location,branch,path,folder_dir,old_name,new_name)
         'repo':package_location,
         'branch':branch,
         'path':path,
-        'folder':folder_dir,
+        'folder_dir':folder_dir,
         'old_name':old_name,
         'new_name':new_name,
         }

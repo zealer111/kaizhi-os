@@ -829,9 +829,9 @@ class Upload_File(BaseHandler):
                     path = os.path.join(package.package_location,f.name)
                 else:
                     folder = Card.objects.get(id=key)
-                    branch = package.branch
+                    branch = folder.branch
                     pid = folder.id
-                    package_id = folder.package.id
+                    package_id = folder.package_id
                     package_location = folder.package_location
                     path = os.path.join(folder.card_location,f.name)
                 card = Card.objects.filter(file_name=f.name,pid=pid)
@@ -2067,12 +2067,18 @@ class Commit_Hw(BaseHandler):
                                 'create_time':str(user_hw.create_time)[:19]
                                 }
                 aw_detail = []
+                other_answer = []
+                other = User_Hw_Record.objects.filter(~Q(user=up),card=_file)
+                if other:
+                    other_answer.append({
+                     'other':'is_have'
+                    })
                 aw_detail.append({
                     'key':_file.id,
                     'content':file_content(self,_file.id,up),
                     'comment':[],
                     'my_answer':my,
-                    'other_answer':[],
+                    'other_answer':other_answer,
                     })
                 return self.write_json({'errno':0, 'msg': 'success','data':aw_detail})
             except Card.DoesNotExist:
