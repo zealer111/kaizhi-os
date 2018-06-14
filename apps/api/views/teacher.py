@@ -132,13 +132,15 @@ def if_package_name_taken(self, package_name, user):
 ##########################################
 
 def if_package_dir_duplicated(self, package_id, path):
+    logger.info("if_package_dir_duplicated: %s %s" % (package_id, path))
     return _package_dir_taken(self, 1, package_id, path)
 
 def if_package_dir_used_by_others(self, package_id, path):
+    logger.info("if_package_dir_used_by_others: %s %s" % (package_id, path))
     return _package_dir_taken(self, 0, package_id, path)
 
 def _package_dir_taken(self, level, package_id, path):
-    logger.debug("if_package_dir_taken:%s %s" % (package_id, path))
+    logger.debug("_package_dir_taken:%s %s" % (package_id, path))
     cards = Card.objects.filter(package_id=package_id, card_location=path)
     if len(cards)==0:
         return self.write_json({'errno':1006,'msg':'卡包文件夹不存在'})
@@ -147,12 +149,12 @@ def _package_dir_taken(self, level, package_id, path):
         if card.c_type == settings.GIT_TYPE_DIR:
             num = git_same_card_number(card.card_location)
             if num>level: # 已有其他地方使用
-                logger.debug("if_package_dir_taken:%s:%s" % (card.card_location, num))
+                logger.debug("_package_dir_taken:%s:%s" % (card.card_location, num))
                 raise SameFileCheck("%s:%s" % (card.card_location, num))
 
             cards = Card.objects.filter(pid=card.id)
             for c in cards:
-                return if_package_dir_used_by_others(self,c.package_id,c.card_location)
+                return _package_dir_taken(self, level, c.package_id,c.card_location)
         else:
             num = git_same_card_number(card.card_location)
             if num>level: # 已有其他地方使用
@@ -1618,19 +1620,19 @@ class Rename_File(BaseHandler):
             if settings.GIT_TYPE_DIR == card.c_type:
                 new_name = file_name
 
-                try: # 源目标文件已经大于1
+                try: #
                    if_package_dir_duplicated(self, card.package_id, card.card_location)
                 except SameFileCheck as e:
                     return self.write_json({'errno':101,'msg':'其他用户正在操作中，无法重命名'})
 
 
+                new_path = os.path.join(os.path.dirname(card.card_location),new_name)
                 try:
-                    new_path = os.path.join(os.path.dirname(card.card_location),new_name)
-                    if_package_dir_used_by_others(self, card.package_id, new_path)
+                    if_package_dir_duplicated(self, card.package_id, new_path)
                 except SameFileCheck as e:
                     return self.write_json({'errno':101,'msg':'其他用户正在操作中，无法重命名'})
 
-                result = git_utils.rename_file('0',card.package_location,card.branch,card.card_location,'',card.file_name,new_name)
+                result = git_utils.rename_file('0',card.package_location, card.branch, card.card_location,'',card.file_name,new_name)
                 card.file_name = new_name
                 card.card_location = new_path # result.get('data')['repo']
                 new_dir = Card.objects.filter(pid=card.id)
@@ -1697,14 +1699,21 @@ class Rename_File(BaseHandler):
                         return self.write_json({'errno':1,'msg':'文件已存在'})
                     new_name = file_name +'.exam'
 
+            # 检查目标文件
+            new_path = os.path.join(folder_dir.package_location, new_name)
+            if if_card_used_by_others(new_path):
+                return self.write_json({'errno':101,'msg':'其他用户正在操作中，无法重命名'})
+
+            # 检查源文件
+            if if_card_duplicated(card.card_location):
+                return self.write_json({'errno':settings.ERR_FILE_USED,'msg':'其他用户正在操作中，无法重命名'})
+
             result = git_utils.rename_file('1',card.package_location,card.branch,card.card_location,
                                             folder_dir.package_location,card.file_name,new_name)
             card.file_name = new_name
             card.card_location = result['data'].get('repo')
             card.save()
             return get_file_dir(self,role,up)
-           # """
-
 
 #教学中心-卡包重命名
 class Rename_Package(BaseHandler):
@@ -2876,7 +2885,7 @@ class Merge_Master(BaseHandler):
                 copy_master.delete()
 
             # merge master start
-            master_package_path = assi_path(self,create_pack.id,False)
+            master_package_path = assi_path(self,create_pack.id,False, True)
             copy_data = copy_master_package(master_package_path.get('data')[0])
             result = git_utils.merge_branch('1',create_pack.package_location,create_pack.branch,assi_pack.branch)
             if '0' == result.get('errno'):
@@ -2913,14 +2922,19 @@ class Recover_File(BaseHandler):
     def post(self, request):
         msg = json.loads(request.body)
         try:
-           c = Card.objects.get(id=msg.get('key'))
+            c = Card.objects.get(id=msg.get('key'))
+            reset_count = 0
         except Card.DoesNotExist:
             return self.write_json({'errno':1,'msg':'卡片不存在'})
         if 1 == c.c_type:
             c.reset_count += 1
             c.save()
             count = c.modify_count - c.reset_count
-            result = git_utils.recover_file(c.package_location,c.branch,c.card_location,count)
+            if count > 1:
+                reset_count +=1
+                result = git_utils.recover_file(c.package_location,c.branch,c.card_location,reset_count)
+            else:
+                result = git_utils.recover_file(c.package_location,c.branch,c.card_location,count)
             if '0' ==  result.get('errno'):
                 c.content = result.get('content')
                 c.save()

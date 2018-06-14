@@ -188,13 +188,15 @@ def get_file_paths_as_package(self,key,up,return_json=True):
         return {'errno':0, 'msg': 'success','sign':package.sign,'data':getChildren()}
 
 
-def assi_path(self,key, return_json=True):
+def assi_path(self,key, return_json=True, return_master=False):
     p = Branch_Package.objects.filter(id=key)
     if p:
         package = Branch_Package.objects.get(id=key)
     else:
-        #package = Master_Package.objects.get(id=key)
-        package = Branch_Package.objects.get(id=key)
+        if return_master:
+            package = Master_Package.objects.get(id=key)
+        else:
+            package = Branch_Package.objects.get(id=key)
     data = []
     data.append({
         'file':package.package_name,

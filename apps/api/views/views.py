@@ -2156,14 +2156,21 @@ class Recover_File(BaseHandler):
     def post(self, request):
         msg = json.loads(request.body)
         try:
-           c = Card.objects.get(id=msg.get('key'))
+            c = Card.objects.get(id=msg.get('key'))
+            reset_count = 0
         except Card.DoesNotExist:
             return self.write_json({'errno':1,'msg':'卡片不存在'})
         if 1 == c.c_type:
             c.reset_count += 1
             c.save()
             count = c.modify_count - c.reset_count
-            result = git_utils.recover_file(c.package_location,c.branch,c.card_location,count)
+            if count > 1:
+                print('****')
+                reset_count +=1
+                result = git_utils.recover_file(c.package_location,c.branch,c.card_location,reset_count)
+            if count == 1:
+                print('!!!!!')
+                result = git_utils.recover_file(c.package_location,c.branch,c.card_location,count)
             if '0' ==  result.get('errno'):
                 c.content = result.get('content')
                 c.save()
